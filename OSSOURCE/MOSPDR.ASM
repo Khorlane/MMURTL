@@ -19,26 +19,26 @@
 ;A page directory or table entry with all zeros means "not used yet."
 ;
 ;The AVL bits are for OS use and are defined as follows:
-;	A - 1 = Alias of someone elses physical memory
-;	V - 1 = Undefined (use later for virtual memory mgmt)
-;	L - 1 = Undefined (use later for virtual memory mgmt)
+; A - 1 = Alias of someone elses physical memory
+; V - 1 = Undefined (use later for virtual memory mgmt)
+; L - 1 = Undefined (use later for virtual memory mgmt)
 ;The other bits are Hardware defined and set as follows:
-;	D - 1 = Dirty (written to) since created.  CPU sets this.
-;	A - 1 = Accessed since created. CPU sets this.
-;	U - 1 = User,  0 = Supervisor. OS sets this.
-;	W - 1 = Writable for user (super pages are always writable to the OS)
-;	P - 1 = Present. CPU will not read or mod entry if this is Zero
+; D - 1 = Dirty (written to) since created.  CPU sets this.
+; A - 1 = Accessed since created. CPU sets this.
+; U - 1 = User,  0 = Supervisor. OS sets this.
+; W - 1 = Writable for user (super pages are always writable to the OS)
+; P - 1 = Present. CPU will not read or mod entry if this is Zero
 ;
 ;
-;					20 Bit Address		AVL00DA00UWP
-;					|					|  | ||  |||
-PUBLIC PDir1	DD	00000000000000000011000000000101b	;PT physical address
-				DD  511 DUP (0)							;511 BLANK entries
+;         20 Bit Address    AVL00DA00UWP
+;         |         |  | ||  |||
+PUBLIC PDir1  DD  00000000000000000011000000000101b ;PT physical address
+        DD  511 DUP (0)             ;  511 BLANK entries
 
-				DD	00000000000000000011000000000000b	;Shadow for PT Linear address
-				DD  511 DUP (0)							;511 BLANK entries
+        DD  00000000000000000011000000000000b ;Shadow for PT Linear address
+        DD  511 DUP (0)             ;  511 BLANK entries
 
-PUBLIC PTbl1	DD  1024 DUP (0)						;1024 blank entries
+PUBLIC PTbl1  DD  1024 DUP (0)      ; 1024 blank entries
 
 
 ;-------------------- END OF MODULE ----------------------

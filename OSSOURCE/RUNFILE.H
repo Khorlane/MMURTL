@@ -19,12 +19,12 @@
 #define DLLIDTAG 0xA0
 #define CODETAG  0xB0
 #define DATATAG  0xB2
-#define CDFIXTAG 0xC0		/* most common (e.g., a variable ref in CSEG) */
-#define CCFIXTAG 0xC1		/* CSEG item refers to CSEG item */
-#define DDFIXTAG 0xC2		/* DESG item refers to DSEG item */
-#define DCFIXTAG 0xC3		/* DESG item refers to CSEG item */
-#define DLFIXTAG 0xC5		/* DLL called from CSEG */
-#define DLPUBTAG 0xC8		/* DLL Defined in CSEG */
+#define CDFIXTAG 0xC0   /* most common (e.g., a variable ref in CSEG) */
+#define CCFIXTAG 0xC1   /* CSEG item refers to CSEG item */
+#define DDFIXTAG 0xC2   /* DESG item refers to DSEG item */
+#define DCFIXTAG 0xC3   /* DESG item refers to CSEG item */
+#define DLFIXTAG 0xC5   /* DLL called from CSEG */
+#define DLPUBTAG 0xC8   /* DLL Defined in CSEG */
 #define ENDTAG   0XFF
 
 /* legal values for run file types */
@@ -35,10 +35,10 @@
 
 
 struct tagtype {
-	unsigned char id;
-	long len;
-	};
+  unsigned char id;
+  long len;
+  };
 
-#define TAGSIZE 5		/* This includes the TAGID & tag length */
+#define TAGSIZE 5   /* This includes the TAGID & tag length */
 
 /************ END OF MODULE *****************/

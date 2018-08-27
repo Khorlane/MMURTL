@@ -8,24 +8,24 @@
 
 #define U32 unsigned long
 #define U16 unsigned short
-#define U8 unsigned char
+#define U8  unsigned char
 #define S32 signed long
 #define S16 signed short
-#define S8 signed char
+#define S8  signed char
 
-static U8 getbyte(void);
-static U8 modrm(void);
-static U8 sib(void);
-static int bytes(char c);
+static U8   getbyte(void);
+static U8   modrm(void);
+static U8   sib(void);
+static int  bytes(char c);
 static void ohex(char c, int extend, int optional, int defsize);
 static void reg_name(U8 which, char size);
 static void escape(char c, char t);
 static void decode(char *s);
 static void do_sib(int m);
 static void do_modrm(char t);
-U32 disassemble(U32 Addr);
+U32         disassemble(U32 Addr);
 
-extern long xprintf(char *fmt, ...);		/* From Monitor.c */
+extern long xprintf(char *fmt, ...);    /* From Monitor.c */
 
 #define SEGSIZE  32
 static U8 *addrIn;
@@ -216,7 +216,7 @@ static char *groups[9][8] = {   /* group 0 is group 3 for ~Ev set */
   { 0, 0, 0, 0, "BT", "BTS", "BTR", "BTC" }
   };
 
-	/* for display */
+  /* for display */
 static char *seg_names[]= {"ES","CS","SS","DS","FS","GS"};
 static char *breg_names[]={"AL","CL","DL","BL","AH","CH","DH","BH" };
 static char *wreg_names[]={"AX","CX","DX","BX","SP","BP","SI","DI" };
@@ -238,9 +238,9 @@ static U8 getbyte(void)
 U8 b;
 ;
 #asm
-	MOV EAX, _addrIn
-	MOV AL, CS:[EAX]
-	MOV [EBP-1], AL
+  MOV EAX, _addrIn
+  MOV AL, CS:[EAX]
+  MOV [EBP-1], AL
 #endasm
 
  ++addrIn;
@@ -279,7 +279,7 @@ static U8 sib(void)
    This macro extracts it.  Used in several places.
 */
 
-#define reg(a)	(((a)>>3)&7)
+#define reg(a)  (((a)>>3)&7)
 
 /*------------------------------------------------------------------------*/
 
@@ -324,16 +324,16 @@ unsigned char buf[6];
   {
     case 'a':
       break;
-    case 'b':	/* byte */
+    case 'b': /* byte */
       n = 1;
       break;
-    case 'w':	/* word */
+    case 'w': /* word */
       n = 2;
       break;
-    case 'd':	/* dword */
+    case 'd': /* dword */
       n = 4;
       break;
-    case 's':	/* fword */
+    case 's': /* fword */
       n = 6;
       break;
     case 'c':
@@ -343,7 +343,7 @@ unsigned char buf[6];
       else
         n = 2;
       break;
-    case 'p':	/* 32 or 48 bit pointer */
+    case 'p': /* 32 or 48 bit pointer */
       if (defsize == 32)
         n = 6;
       else
@@ -360,32 +360,32 @@ unsigned char buf[6];
   for (; i<extend; i++)
     buf[i] = (buf[i-1] & 0x80) ? 0xff : 0;
 
-  if (s)		/* outputs the segment value of FAR pointer */
+  if (s)    /* outputs the segment value of FAR pointer */
   {
-	xprintf("%02x%02x",buf[n-1],buf[n-2]);
+  xprintf("%02x%02x",buf[n-1],buf[n-2]);
     n -= 2;
   }
 
   if (extend > n)
   {
     if (!optional)
-	xprintf("+");
-	n = 4;
+  xprintf("+");
+  n = 4;
   }
   switch (n)
   {
     case 1: {
-			xprintf("%02x",buf[0]);
-    		break;
-    		}
-    case 2:	{
-			xprintf("%02x%02x",buf[1],buf[0]);
-    		break;
-    		}
-    case 4:	{
-			xprintf("%02x%02x%02x%02x",buf[3],buf[2],buf[1],buf[0]);
-    		break;
-    		}
+      xprintf("%02x",buf[0]);
+        break;
+        }
+    case 2: {
+      xprintf("%02x%02x",buf[1],buf[0]);
+        break;
+        }
+    case 4: {
+      xprintf("%02x%02x%02x%02x",buf[3],buf[2],buf[1],buf[0]);
+        break;
+        }
   }
 }
 
@@ -423,42 +423,42 @@ static void reg_name(U8 which, char size)
 static void escape(char c, char t)
 {
   S32  delta, vals;
-  U8 b2;
-  S8 valsb;
-  S16 valsw;
+  U8   b2;
+  S8   valsb;
+  S16  valsw;
 
   switch (c)
   {
     case 'A':                             /* Direct Address */
-	    ohex(t, 4, 0, 32);
-	    break;
+      ohex(t, 4, 0, 32);
+      break;
     case 'C':                             /* Reg of R/M picks control reg */
-		xprintf("CR%d",reg(modrm()));
-	    break;
+    xprintf("CR%d",reg(modrm()));
+      break;
     case 'D':                             /* Reg of R/M pick debug reg */
-		xprintf("DR%d",modrm());
-		break;
+    xprintf("DR%d",modrm());
+    break;
     case 'E':                             /* R/M picks operand */
-		do_modrm(t);
-		break;
+    do_modrm(t);
+    break;
     case 'G':                             /* Reg of R/M picks general reg */
-		if (t == 'F')
-        	reg_name((modrm()&7), t);
-		else
-		reg_name(reg(modrm()), t);
-		break;
+    if (t == 'F')
+          reg_name((modrm()&7), t);
+    else
+    reg_name(reg(modrm()), t);
+    break;
     case 'I':                             /* Immediate data */
-		ohex(t, 0, 0, opsize);
-		break;
+    ohex(t, 0, 0, opsize);
+    break;
     case 'J':                             /* Relative IP offset */
-		switch (bytes(t))
-		{
+    switch (bytes(t))
+    {
         case 1:
-          valsb = getbyte();		/* must remian signed! */
+          valsb = getbyte();              /* must remian signed! */
           vals = valsb;
           break;
         case 2:
-          valsb = getbyte();        /*RAB  Made SIGNEd bytes/Words */
+          valsb = getbyte();              /*RAB  Made SIGNEd bytes/Words */
           valsw = getbyte()<<8;
           vals = valsw + valsb;
           break;
@@ -468,96 +468,96 @@ static void escape(char c, char t)
           vals |= getbyte() << 16;
           vals |= getbyte() << 24;
           break;
-		}
-		delta = addrIn + vals;
-	    xprintf( "%x",delta);
-		break;
+    }
+    delta = addrIn + vals;
+      xprintf( "%x",delta);
+    break;
     case 'M':                             /* R/M picks memory */
-		do_modrm(t);
-		break;
-	case 'O':                             /* NO R/M, Offset only */
-		decode("~p:[");
-		ohex(t, 4, 0, 32);
-		xprintf("]");
-		break;
+    do_modrm(t);
+    break;
+  case 'O':                               /* NO R/M, Offset only */
+    decode("~p:[");
+    ohex(t, 4, 0, 32);
+    xprintf("]");
+    break;
     case 'R':                             /* Mod of R/M pick REG only */
-		do_modrm(t);
-		break;
+    do_modrm(t);
+    break;
     case 'S':                             /* Reg of R/M picks seg reg */
-	    xprintf( "%s", seg_names[reg(modrm())]);
-		break;
+      xprintf( "%s", seg_names[reg(modrm())]);
+    break;
     case 'T':                             /* Reg of R/M picks test reg */
-		xprintf( "TR%d",modrm());
-		break;
+    xprintf( "TR%d",modrm());
+    break;
     case 'X':                             /* DS:ESI */
-		xprintf("DS:[ESI]");
-		break;
-	case 'Y':                             /* ES:EDI */
-		xprintf("ES:[EDI]");
-		break;
+    xprintf("DS:[ESI]");
+    break;
+  case 'Y':                               /* ES:EDI */
+    xprintf("ES:[EDI]");
+    break;
     case '2':                             /* Prefix of 2 byte opcode */
-		b2 = getbyte();
-		if (b2 < 0x10)
-			decode(SecOp00[b2]);
-		else if ((b2 > 0x1F) && (b2 < 0x30))
-			decode(SecOp20[b2-0x20]);
-		else if ((b2 > 0x7F) && (b2 < 0xC0))
-			decode(SecOp80[b2-0x80]);
-		else
-		    xprintf("<bogus>");
-		break;
-	case 'e':                 /*  t is part of reg name */
-		if (opsize == 32)
-		{
-			if (t == 'w')     /* put out "d" if t is "w" on 32 bit opsize */
-		  		xprintf("D");
-			else
-			{
-			  xprintf("E");  /* put out "E" if not t <> "w" then put t */
-			  xprintf("%c",t);
-			}
-		}
-		else {
-			  xprintf("%c",t);
-		}
-		break;
+    b2 = getbyte();
+    if (b2 < 0x10)
+      decode(SecOp00[b2]);
+    else if ((b2 > 0x1F) && (b2 < 0x30))
+      decode(SecOp20[b2-0x20]);
+    else if ((b2 > 0x7F) && (b2 < 0xC0))
+      decode(SecOp80[b2-0x80]);
+    else
+        xprintf("<bogus>");
+    break;
+  case 'e':                 /*  t is part of reg name */
+    if (opsize == 32)
+    {
+      if (t == 'w')     /* put out "d" if t is "w" on 32 bit opsize */
+          xprintf("D");
+      else
+      {
+        xprintf("E");  /* put out "E" if not t <> "w" then put t */
+        xprintf("%c",t);
+      }
+    }
+    else {
+        xprintf("%c",t);
+    }
+    break;
     case 'f':                /* floating point */
-	    xprintf("<Float Op>");
+      xprintf("<Float Op>");
 
-/*		floating_point(t-'0');  */
+/*    floating_point(t-'0');  */
 
-		break;
+    break;
     case 'g':                             /* do R/M group 'n' */
-		decode(groups[t-'0'][reg(modrm())]);
-		break;
+    decode(groups[t-'0'][reg(modrm())]);
+    break;
     case 'p':                             /* Segment prefix */
-		switch (t)
-		{
-		case 'C':                         /* CS */
-		case 'D':                         /* DS */
-		case 'E':                         /* ES */
-		case 'F':                         /* FS */
-		case 'G':                         /* GS */
-		case 'S':                         /* SS */
-		  prefix = t;
+    switch (t)
+    {
+    case 'C':                         /* CS */
+    case 'D':                         /* DS */
+    case 'E':                         /* ES */
+    case 'F':                         /* FS */
+    case 'G':                         /* GS */
+    case 'S':                         /* SS */
+      prefix = t;
           decode(opmap1[getbyte()]);
           break;
- 		case ':':
+    case ':':
           if (prefix) {
-          	xprintf("%cS:",prefix);
+            xprintf("%cS:",prefix);
           }
           break;
-    	case ' ':
+      case ' ':
           decode(opmap1[getbyte()]);
           break;
-		}
-		break;
-    case 's':								/* Size override */
-		if (t=='o') {						/* o is operand */
-		  opsize = 48 - opsize;
-		  decode(opmap1[getbyte()]);
-  	    }
-	    break;
+    }
+    break;
+    case 's':               /* Size override */
+    if (t=='o') {           /* o is operand */
+      opsize = 48 - opsize;
+      decode(opmap1[getbyte()]);
+        }
+      break;
   }
 }
 
@@ -584,11 +584,11 @@ static void decode(char *s)
       escape(c, *s++);
     }
     else
-      if (c == ' ') 	         /* space */
-		xprintf(" ");
-	  else {
-		xprintf("%c",c);         /* else put out the char found! */
-		}
+      if (c == ' ')             /* space */
+    xprintf(" ");
+    else {
+    xprintf("%c",c);            /* else put out the char found! */
+    }
   }
 }
 
@@ -598,9 +598,9 @@ static void decode(char *s)
 static void do_sib(int m)
 {
   int s, i, b;
-  s = ((sib()) >> 6) & 7;		/* SSxxxxxx Scale */
-  i = ((sib()) >> 3) & 7;		/* xxIIIxxx Index */
-  b = sib() & 7;				/* xxxxxBBB Base  */
+  s = ((sib()) >> 6) & 7;   /* SSxxxxxx Scale */
+  i = ((sib()) >> 3) & 7;   /* xxIIIxxx Index */
+  b = sib() & 7;            /* xxxxxBBB Base  */
   switch (b)
   {
     case 0: decode("~p:[EAX"); break;
@@ -672,7 +672,7 @@ static void do_modrm(char t)
       case 1: xprintf("ECX"); break;
       case 2: xprintf("EDX"); break;
       case 3: xprintf("EBX"); break;
-      case 4: do_sib(m); break;
+      case 4: do_sib(m);      break;
       case 5: xprintf("EBP"); break;
       case 6: xprintf("ESI"); break;
       case 7: xprintf("EDI"); break;
@@ -697,15 +697,15 @@ static void do_modrm(char t)
 
 U32 disassemble(U32 Addr)
 {
-  prefix = 0;
+  prefix  = 0;
   fmodrmv = 0;
-  fsibv = 0;
-  opsize = SEGSIZE;	 /* default operand size is DWORD */
-  addrIn = Addr;
+  fsibv   = 0;
+  opsize  = SEGSIZE;  /* default operand size is DWORD */
+  addrIn  = Addr;
 
   xprintf( "%08x   ", addrIn);
 
-  decode(opmap1[getbyte()]);	/* decode instruction and output */
+  decode(opmap1[getbyte()]);  /* decode instruction and output */
 
   xprintf( "\r\n");
   return addrIn;

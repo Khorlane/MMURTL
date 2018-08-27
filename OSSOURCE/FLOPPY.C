@@ -10,50 +10,50 @@
 #define S32 long
 #define U16 unsigned int
 #define S16 int
-#define U8 unsigned char
-#define S8 char
+#define U8  unsigned char
+#define S8  char
 
 /* MMURTL OS PROTOTYPES */
 
 extern far SpawnTask(S8  *pEntry,
-		             U32 dPriority,
-                     U32 fDebug,
+                     U32  dPriority,
+                     U32  fDebug,
                      S8  *pStack,
-           		     U32 fOSCode);
+                     U32  fOSCode);
 
 extern far U32 AllocExch(U32 *pExchRet);
 
 extern far U32 AllocDMAPage(U32 nPages, U8 **ppMemRet U32 *pPhyMemRet);
 
-extern far U32 InitDevDr(U32 dDevNum,
-				    	  S8  *pDCBs,
-					  	  U32 nDevices,
-					  	  U32 dfReplace);
+extern far U32 InitDevDr(U32  dDevNum,
+                         S8  *pDCBs,
+                         U32  nDevices,
+                         U32  dfReplace);
 
 extern far DmaSetUp(S8  *pPhyMem,
-					U32 sdMem,			/* size */
-					U32 dChannel,		/* channel 2 floppy */
-					U32 dType,			/* 0=Verfify, 1=IN,  2=OUT */
-					U32 dMode);		/* FDC uses 1 (single cycle) */
+                    U32  sdMem,      /* size */
+                    U32  dChannel,   /* channel 2 floppy */
+                    U32  dType,      /* 0=Verfify, 1=IN,  2=OUT */
+                    U32  dMode);     /* FDC uses 1 (single cycle) */
 
-extern far U32 UnMaskIRQ(U32 IRQNum);
-extern far U32 MaskIRQ(U32 IRQNum);
-extern far U32 SetIRQVector(U32 IRQNum, S8  *pIRQ);
-extern far U32 EndOfIRQ(U32 IRQNum);
-extern far U32 SendMsg(U32 Exch, U32 msg1, U32 msg2);
-extern far U32 ISendMsg(U32 Exch, U32 msg1, U32 msg2);
-extern far U32 WaitMsg(U32 Exch, S8  *pMsgRet);
-extern far U32 CheckMsg(U32 Exch, S8  *pMsgRet);
-extern far U32 GetTimerTick(U32 *pTickRet);
-extern far U32 Alarm(U32 Exch, U32 count);
-extern far U32 KillAlarm(U32 Exch);
-extern far U32 Sleep(U32 count);
+extern far U32  UnMaskIRQ(U32 IRQNum);
+extern far U32  MaskIRQ(U32 IRQNum);
+extern far U32  SetIRQVector(U32 IRQNum, S8  *pIRQ);
+extern far U32  EndOfIRQ(U32 IRQNum);
+extern far U32  SendMsg(U32 Exch, U32 msg1, U32 msg2);
+extern far U32  ISendMsg(U32 Exch, U32 msg1, U32 msg2);
+extern far U32  WaitMsg(U32 Exch, S8  *pMsgRet);
+extern far U32  CheckMsg(U32 Exch, S8  *pMsgRet);
+extern far U32  GetTimerTick(U32 *pTickRet);
+extern far U32  Alarm(U32 Exch, U32 count);
+extern far U32  KillAlarm(U32 Exch);
+extern far U32  Sleep(U32 count);
 extern far void MicroDelay(U32 us15count);
 extern far void OutByte(U8 Byte, U16 wPort);
 extern far void OutWord(U16 Word, U16 wPort);
-extern far U8 InByte(U16 wPort);
-extern far U16 InWord(U16 wPort);
-extern far U8 ReadCMOS(U16 Address);
+extern far U8   InByte(U16 wPort);
+extern far U16  InWord(U16 wPort);
+extern far U8   ReadCMOS(U16 Address);
 extern far void CopyData(U8 *pSource, U8 *pDestination, U32 dBytes);
 
 
@@ -70,39 +70,39 @@ static void fd_motoroff(U32 drive);
 /* THE REST OF THE PROTOTYPES */
 
 U32 fdisk_setup(void);
-static U32 RdWrtVerf(U32 op);
-static U32 format_track(void);
-static U32 Set_Media(U32 drive, U32 type);
-static U32 FDC_reset(void);
-static U8  cmos_type (U8 drive_nr);
-static U32 send_fdc(U8 parm);
-static U8  GetParm(U8 index);
-static U32 wait_int (void);
-static U32 seek(void);
-static U32 recal(void);
-static U32 read_data(U8 *pDataRet);
-static U32 results(U32 expect);
+static U32  RdWrtVerf(U32 op);
+static U32  format_track(void);
+static U32  Set_Media(U32 drive, U32 type);
+static U32  FDC_reset(void);
+static U8   cmos_type (U8 drive_nr);
+static U32  send_fdc(U8 parm);
+static U8   GetParm(U8 index);
+static U32  wait_int (void);
+static U32  seek(void);
+static U32  recal(void);
+static U32  read_data(U8 *pDataRet);
+static U32  results(U32 expect);
 static void purge_fdc (void);
 static void wait_for_head(void);
-static U32 med_change(void);
-static U32 get_fdc_status(void);
+static U32  med_change(void);
+static U32  get_fdc_status(void);
 
 /* The following 3 calls are required in every MMURTL device driver */
 
-static U32 dev_op(U32 dDevice,
- 		    U32 dOpNum,
-		    U32 dLBA,
-		    U32 dnBlocks,
-		    S8  *pData);
+static U32 dev_op(U32  dDevice,
+                  U32  dOpNum,
+                  U32  dLBA,
+                  U32  dnBlocks,
+                  S8  *pData);
 
-static U32 dev_stat(U32 dDevice,
-			  S8 * pStatRet,
-			  U32 dStatusMax,
-			  U32 *pdSatusRet);
+static U32 dev_stat(U32  dDevice,
+                    S8  *pStatRet,
+                    U32  dStatusMax,
+                    U32 *pdSatusRet);
 
-static U32 dev_init(U32 dDevNum,
-			  S8  *pInitData,
-			  U32  sdInitData);
+static U32 dev_init(U32  dDevNum,
+                    S8  *pInitData,
+                    U32  sdInitData);
 
 /* Near External for troubleshooting */
 
@@ -110,86 +110,86 @@ extern long xprintf(char *fmt, ...);
 
 /* LOCAL DEFINITIONS */
 
-#define ok    0
-#define TRUE  1
-#define FALSE 0
+#define ok                0
+#define TRUE              1
+#define FALSE             0
 
-#define RATE_500 		0x00
-#define RATE_300 		0x01
-#define RATE_250 		0x02
-#define RATE_1000       0x03
-#define INT_FLAG 		0x80
+#define RATE_500       0x00
+#define RATE_300       0x01
+#define RATE_250       0x02
+#define RATE_1000      0x03
+#define INT_FLAG       0x80
 
 /* Error Codes to return */
 
 #define ErcNotInstalled 504
-#define ErcAddrMark		602
-#define ErcReadOnly		603
-#define ErcSectNotFound	604
-#define ErcNewMedia		605
-#define ErcNotMounted	606
-#define ErcCRC			607
-#define ErcBadFDC		608
-#define ErcBadSeek		609
-#define ErcFDCTimeOut	610
-#define ErcOverRun		611
-#define ErcBadLBA		612
-#define ErcDriveType	613
-#define ErcBadOp		614
-#define ErcBadRecal		615
-#define ErcSendFDC		616
-#define ErcResults		617
-#define ErcBadCmd		618
-#define ErcReadyLine	619
+#define ErcAddrMark     602
+#define ErcReadOnly     603
+#define ErcSectNotFound 604
+#define ErcNewMedia     605
+#define ErcNotMounted   606
+#define ErcCRC          607
+#define ErcBadFDC       608
+#define ErcBadSeek      609
+#define ErcFDCTimeOut   610
+#define ErcOverRun      611
+#define ErcBadLBA       612
+#define ErcDriveType    613
+#define ErcBadOp        614
+#define ErcBadRecal     615
+#define ErcSendFDC      616
+#define ErcResults      617
+#define ErcBadCmd       618
+#define ErcReadyLine    619
 
 /* Commands accepted by driver */
 
-#define CmdNull     0
-#define CmdRead     1
-#define CmdWrite    2
-#define CmdVerify   3
-#define CmdFmtBlk   4
-#define CmdFmtTrk   5
-#define CmdSeekTrk  6
+#define CmdNull           0
+#define CmdRead           1
+#define CmdWrite          2
+#define CmdVerify         3
+#define CmdFmtBlk         4
+#define CmdFmtTrk         5
+#define CmdSeekTrk        6
 
 /* FDC port definitions */
 
-#define DOR_PORT	0x3f2
-#define MSR_PORT	0x3f4
-#define DATA_PORT	0x3f5
-#define DIR_PORT	0x3f7
-#define DRR_PORT	0x3f7
+#define DOR_PORT      0x3f2
+#define MSR_PORT      0x3f4
+#define DATA_PORT     0x3f5
+#define DIR_PORT      0x3f7
+#define DRR_PORT      0x3f7
 
 /* FDC Return Status bit definitions */
 
-#define BUSY  		0x10	/* was BIT4 */
-#define DSKCHANGE_BIT 0x80
-#define BIT7 		0x80
-#define BIT6 		0x40
-#define BIT5 		0x20
-#define BIT4 		0x10
-#define BIT3 		0x08
-#define BIT2 		0x04
-#define BIT1 		0x02
-#define BIT0 		0x01
+#define BUSY           0x10                 /* was BIT4 */
+#define DSKCHANGE_BIT  0x80
+#define BIT7           0x80
+#define BIT6           0x40
+#define BIT5           0x20
+#define BIT4           0x10
+#define BIT3           0x08
+#define BIT2           0x04
+#define BIT1           0x02
+#define BIT0           0x01
 
-#define RQM			0x80
-#define DIO			0x40
+#define RQM            0x80
+#define DIO            0x40
 
 /* FDC commands */
 
-#define FDC_READ	0xe6
-#define FDC_WRITE	0xc5
-#define FDC_FORMAT	0x4d
+#define FDC_READ       0xe6
+#define FDC_WRITE      0xc5
+#define FDC_FORMAT     0x4d
 
 /* FDC DOR register bits */
 
-#define FD_MOTOR0	0x10
-#define FD_MOTOR1   0x20
-#define FD_INTS		0x08
-#define FD_RESET	0x04
-#define FD_DRV1SEL	0x01
-#define FD_MOTMASK	0xf0		/* mask to see motor bits */
+#define FD_MOTOR0      0x10
+#define FD_MOTOR1      0x20
+#define FD_INTS        0x08
+#define FD_RESET       0x04
+#define FD_DRV1SEL     0x01
+#define FD_MOTMASK     0xf0                 /* mask to see motor bits */
 
 /* L O C A L   C O N S T A N T S */
 
@@ -206,8 +206,8 @@ extern long xprintf(char *fmt, ...);
    8  - Fill Byte for Format command
    9  - Head settle time in milliseconds
    10 - Motor start time in milliseconds/10 (mult value by 10 to use)
-   11 -	max cylinder index (number of cyls - 1)
-   12 -	Xfer rate Command
+   11 - max cylinder index (number of cyls - 1)
+   12 - Xfer rate Command
    13 - Unused
    14 - Double Step Flag (e.g., 360K in a 1.2Mb drive)
    15 - Unused
@@ -233,18 +233,18 @@ static U8 fdisk_table[5][16]= {
 
 };
 
-static U32 MotorStk[100];  /* 400 byte stack for motor task */
+static U32 MotorStk[100];                   /* 400 byte stack for motor task */
 static U32 MotorStkTop;
 
-static U8 fd_fdc_command;
-static U8 fd_drive;
-static U8 fd_nr_sectors;
-static U8 fd_head;
-static U8 fd_sector;
-static U8 fd_track;
-static U8 seek_status;
-static U8 fwrite;
-static S8  *fd_pData;
+static U8  fd_fdc_command;
+static U8  fd_drive;
+static U8  fd_nr_sectors;
+static U8  fd_head;
+static U8  fd_sector;
+static U8  fd_track;
+static U8  seek_status;
+static U8  fwrite;
+static S8 *fd_pData;
 
 /* current fdisk_table[x] for drive 0 & 1 */
 
@@ -259,66 +259,66 @@ static struct statstruct{
   U32 erc;
   U32 blocks_done;
   U32 BlocksMax;
-  U8 fNewMedia;
-  U8 type_now;		/* current fdisk_table for drive selected */
-  U8 resvd1[2];		/* padding for DWord align  */
-  U32 nCyl;			/* total physical cylinders */
-  U32 nHead;		/* total heads on device    */
-  U32 nSectors;		/* Sectors per track        */
-  U32 nBPS;			/* Number of bytes per sect */
-  U8 params[16]; 	/* begin device specific fields */
-  U8 STATUS[8];		/* status returned from FDC (for user status) */
+  U8  fNewMedia;
+  U8  type_now;                             /* current fdisk_table for drive selected */
+  U8  resvd1[2];                            /* padding for DWord align  */
+  U32 nCyl;                                 /* total physical cylinders */
+  U32 nHead;                                /* total heads on device    */
+  U32 nSectors;                             /* Sectors per track        */
+  U32 nBPS;                                 /* Number of bytes per sect */
+  U8  params[16];                           /* begin device specific fields */
+  U8  STATUS[8];                            /* status returned from FDC (for user status) */
   U32 resvd3;
-  U32 resvd4;		/* 64 bytes total */
+  U32 resvd4;                               /* 64 bytes total */
   };
 
 static struct statstruct fdstatus;
 static struct statstruct FDStatTmp;
 
-static U8 FDC_STATUS[8];	/* status returned from FDC */
-static U8 LAST_TRACK[3];  /* holds last track number */
+static U8 FDC_STATUS[8];                    /* status returned from FDC */
+static U8 LAST_TRACK[3];                    /* holds last track number */
 
 static struct dcbtype {
-	S8   Name[12];
-	S8   sbName;
-	S8   type;
-	S16  nBPB;
-	U32  last_erc;
-	U32  nBlocks;
-	S8  *pDevOp;
-	S8  *pDevInit;
-	S8  *pDevSt;
-	S8   fDevReent;
-	S8   fSingleUser;
-	S16  wJob;
-	U32  OS1;
-	U32  OS2;
-	U32  OS3;
-	U32  OS4;
-	U32  OS5;
-	U32  OS6;
-	};
+  S8   Name[12];
+  S8   sbName;
+  S8   type;
+  S16  nBPB;
+  U32  last_erc;
+  U32  nBlocks;
+  S8  *pDevOp;
+  S8  *pDevInit;
+  S8  *pDevSt;
+  S8   fDevReent;
+  S8   fSingleUser;
+  S16  wJob;
+  U32  OS1;
+  U32  OS2;
+  U32  OS3;
+  U32  OS4;
+  U32  OS5;
+  U32  OS6;
+  };
 
-static struct dcbtype fdcb[2];		/* two floppy device control blcocks */
+static struct dcbtype fdcb[2];              /* two floppy device control blcocks */
 
 
 /* Exch, msgs space, and vars for FD Motor task */
-static U8 dor_crnt;		/* last value sent to DOR port */
+static U8 dor_crnt;                         /* last value sent to DOR port */
 
-static U8 motor0_want;		/* desired motor0 state, TRUE = want ON */
-static U8 motor1_want;		/* desired motor1 state, TRUE = want ON */
-static U32 fd_tick;		/* Set to tick everytime we select a floppy */
-static U32 fd_newtick;		/* used to check tick time */
+static U8 motor0_want;                      /* desired motor0 state, TRUE = want ON */
+static U8 motor1_want;                      /* desired motor1 state, TRUE = want ON */
+static U32 fd_tick;                         /* Set to tick everytime we select a floppy */
+static U32 fd_newtick;                      /* used to check tick time */
 
 /* Exch and msgs space for FD ISR */
 static U32 fd_exch;
 static U32 fd_msg[2];
 
 static U32 rgSectorMax[10] = {0, 720, 2400, 1440, 2880,
-						0, 0, 0, 0, 0};		/* set max sectors */
+            0, 0, 0, 0, 0};                 /* set max sectors */
 
-static U8 *sectbuf;		/* sector buffer, 1 Page with AllocDMAPage */
-static U32 physectbuf;	/* physical address of DMA buffer */
+static U8 *sectbuf;                         /* sector buffer, 1 Page with AllocDMAPage */
+static U32 physectbuf;                      /* physical address of DMA buffer */
 
 /*======================================================*/
 /*=================== START OF CODE ====================*/
@@ -328,7 +328,7 @@ static void enable_ints(void)
 {
 ;
 #asm
-	STI
+  STI
 #endasm
 }
 
@@ -336,7 +336,7 @@ static void disable_ints(void)
 {
 ;
 #asm
-	CLI
+  CLI
 #endasm
 }
 
@@ -354,32 +354,32 @@ static void disable_ints(void)
 
 static void fdmotor_task(void)
 {
-	enable_ints();
+  enable_ints();
 
 MotorLoop:
 
-	Sleep(300);							/* 3 seconds */
+  Sleep(300);                               /* 3 seconds */
 
-	GetTimerTick(&fd_newtick);
+  GetTimerTick(&fd_newtick);
 
-	if ((fd_newtick - fd_tick) > 300) {	/* not used in last 3 seconds */
+  if ((fd_newtick - fd_tick) > 300) {       /* not used in last 3 seconds */
 
-		if ((!motor0_want) && (dor_crnt & FD_MOTOR0))
-		{ /* They want 0 off */
-			disable_ints();
-			dor_crnt &= ~FD_MOTOR0;
-			OutByte( dor_crnt, DOR_PORT);
-			enable_ints();
-		}
+    if ((!motor0_want) && (dor_crnt & FD_MOTOR0))
+    { /* They want 0 off */
+      disable_ints();
+      dor_crnt &= ~FD_MOTOR0;
+      OutByte( dor_crnt, DOR_PORT);
+      enable_ints();
+    }
 
-		if ((!motor1_want) && (dor_crnt & FD_MOTOR1)) { /* They want 1 off */
-			disable_ints();
-			dor_crnt &= ~FD_MOTOR1;
-			OutByte( dor_crnt, DOR_PORT);
-			enable_ints();
-		}
-	}
-	goto MotorLoop;
+    if ((!motor1_want) && (dor_crnt & FD_MOTOR1)) { /* They want 1 off */
+      disable_ints();
+      dor_crnt &= ~FD_MOTOR1;
+      OutByte( dor_crnt, DOR_PORT);
+      enable_ints();
+    }
+  }
+  goto MotorLoop;
 }
 
 /*******************************************
@@ -396,45 +396,45 @@ static void fd_select(U32 drive)
 U8 fsend;
 U8 fdelay;
 
-	GetTimerTick(&fd_tick);		/* update last time selected */
+  GetTimerTick(&fd_tick);                   /* update last time selected */
 
-	fsend = FALSE;
-	fdelay = FALSE;
+  fsend = FALSE;
+  fdelay = FALSE;
 
-	if (drive) {					/* drive 1 */
-		if (!(dor_crnt & 0x01)) {
-			fsend = TRUE;
-			dor_crnt |= 0x01;		/* select 1 */
-		}
-		if (!(dor_crnt & FD_MOTOR1)) {
-			fsend = TRUE;
-			fdelay = TRUE;
-			dor_crnt |= FD_MOTOR1;	/* motor 1 on */
-		}
-	}
-	else {
-   		if (dor_crnt & 0x01) {
-			fsend = TRUE;
-			dor_crnt &= 0xFE;		/* select 0 (turn 1 off) */
-		}
-		if (!(dor_crnt & FD_MOTOR0)) {
-			fsend = TRUE;
-			fdelay = TRUE;
-			dor_crnt |= FD_MOTOR0;	/* motor 0 on */
-		}
-	}
+  if (drive) {                              /* drive 1 */
+    if (!(dor_crnt & 0x01)) {
+      fsend = TRUE;
+      dor_crnt |= 0x01;                     /* select 1 */
+    }
+    if (!(dor_crnt & FD_MOTOR1)) {
+      fsend = TRUE;
+      fdelay = TRUE;
+      dor_crnt |= FD_MOTOR1;                /* motor 1 on */
+    }
+  }
+  else {
+      if (dor_crnt & 0x01) {
+      fsend = TRUE;
+      dor_crnt &= 0xFE;                     /* select 0 (turn 1 off) */
+    }
+    if (!(dor_crnt & FD_MOTOR0)) {
+      fsend = TRUE;
+      fdelay = TRUE;
+      dor_crnt |= FD_MOTOR0;                /* motor 0 on */
+    }
+  }
 
-	if (fsend) {
+  if (fsend) {
 
-		disable_ints();
+    disable_ints();
 
-		OutByte( dor_crnt, DOR_PORT);
+    OutByte( dor_crnt, DOR_PORT);
 
-		enable_ints();
+    enable_ints();
 
-		if (fdelay)
-			Sleep(33);  /* delay 1/3th second if not already on! */
-	}
+    if (fdelay)
+      Sleep(33);                            /* delay 1/3th second if not already on! */
+  }
 
 }
 
@@ -448,9 +448,9 @@ static void fd_motoroff(U32 motor)
 /* Set what we want so motor task will know */
 
 if (motor)
-	motor1_want = FALSE;
+  motor1_want = FALSE;
 else
-	motor0_want = FALSE;
+  motor0_want = FALSE;
 }
 
 /*********************************************************
@@ -461,34 +461,34 @@ U32 fdisk_setup(void)
 {
 U32 erc;
 
-fdcb[0].Name[0] = 'F';
-fdcb[0].Name[1] = 'D';
-fdcb[0].Name[2] = '0';
-fdcb[0].sbName  = 3;
-fdcb[0].type    = 1;
-fdcb[0].fDevReent = 0;	/* not reentrant */
+fdcb[0].Name[0]     = 'F';
+fdcb[0].Name[1]     = 'D';
+fdcb[0].Name[2]     = '0';
+fdcb[0].sbName      = 3;
+fdcb[0].type        = 1;
+fdcb[0].fDevReent   = 0;                    /* not reentrant */
 fdcb[0].fSingleUser = 0;
 
-fdcb[1].Name[0] = 'F';
-fdcb[1].Name[1] = 'D';
-fdcb[1].Name[2] = '1';
-fdcb[1].sbName  = 3;
-fdcb[1].type    = 1;	/* this is set set to zero if not installed */
-fdcb[1].fDevReent = 0;	/* not reentrant */
+fdcb[1].Name[0]     = 'F';
+fdcb[1].Name[1]     = 'D';
+fdcb[1].Name[2]     = '1';
+fdcb[1].sbName      = 3;
+fdcb[1].type        = 1;                    /* this is set set to zero if not installed */
+fdcb[1].fDevReent   = 0;                    /* not reentrant */
 fdcb[1].fSingleUser = 0;
 
- dor_crnt |= (FD_INTS | FD_RESET);	 /* set ints & reset bits high */
+ dor_crnt |= (FD_INTS | FD_RESET);          /* set ints & reset bits high */
  motor0_want = FALSE;
  motor1_want = FALSE;
- seek_status = 0;       /* clear seek status */
- fdstatus.erc = 0;      /* clear global disk error */
+ seek_status = 0;                           /* clear seek status */
+ fdstatus.erc = 0;                          /* clear global disk error */
 
- erc = AllocExch(&fd_exch);		/* allocates exchanges for messaging */
+ erc = AllocExch(&fd_exch);                 /* allocates exchanges for messaging */
  if (erc)
- 	return(erc);
+  return(erc);
  erc = AllocDMAPage(1, &sectbuf, &physectbuf);
  if (erc)
- 	return(erc);
+  return(erc);
 
 /* Used to test DMA memory call
  xprintf("DMA Address:  %08x, DMA Physical : %08x\r\n", sectbuf, physectbuf);
@@ -500,7 +500,7 @@ fdcb[1].fSingleUser = 0;
  SpawnTask( &fdmotor_task, 18, 0, &MotorStkTop, 1);
 
  SetIRQVector(6, &fdisk_isr);
- UnMaskIRQ(6);    /*  unmask IRQ 6 */
+ UnMaskIRQ(6);                              /*  unmask IRQ 6 */
 
  type0 = cmos_type(0);
  if (type0)
@@ -519,29 +519,29 @@ fdcb[1].fSingleUser = 0;
 /* reset the FDC */
 
  if (fdstatus.erc= FDC_reset())
- 	return (fdstatus.erc);
+  return (fdstatus.erc);
 
 /* now we attempt to select and recal both drives */
 
  if (type0) {
-	fd_drive = 0;		/* select drive 0 */
- 	fd_select(0);
-	if (erc = recal())
-	{
-		erc = recal();		/* try twice */
-	}
- 	fd_motoroff(0);
-	if (erc) return (fdstatus.erc = erc);
- 	}
+  fd_drive = 0;                             /* select drive 0 */
+  fd_select(0);
+  if (erc = recal())
+  {
+    erc = recal();                          /* try twice */
+  }
+  fd_motoroff(0);
+  if (erc) return (fdstatus.erc = erc);
+  }
 
  if (type1) {
-	fd_drive = 1;		/* select drive 1 */
- 	fd_select(1);
-	if (erc = recal())
-		erc = recal();		/* try twice */
-	if (erc) fdcb[1].type = 0;
- 	fd_motoroff(1);
- 	}
+  fd_drive = 1;                             /* select drive 1 */
+  fd_select(1);
+  if (erc = recal())
+    erc = recal();                          /* try twice */
+  if (erc) fdcb[1].type = 0;
+  fd_motoroff(1);
+  }
 
  fdcb[0].pDevOp = &dev_op;
  fdcb[0].pDevInit = &dev_init;
@@ -563,20 +563,20 @@ static U32 FDC_reset(void)
 {
  U32 erc;
 
- seek_status = 0;					 /* Set to Recal on next seek */
+ seek_status = 0;                           /* Set to Recal on next seek */
 
  disable_ints();
 
- OutByte(0x08, DOR_PORT);	 /* Drop reset signal on disk controller */
- MicroDelay(75);			 /* Wait 1ms */
- OutByte(0x0C, DOR_PORT);	 /* Raise reset line on disk controller */
+ OutByte(0x08, DOR_PORT);                   /* Drop reset signal on disk controller */
+ MicroDelay(75);                            /* Wait 1ms */
+ OutByte(0x0C, DOR_PORT);                   /* Raise reset line on disk controller */
 
  enable_ints();
 
  /* wait for interrupt and return if error (timeout...?) */
 
  if (erc = wait_int())
- 	return(erc);
+  return(erc);
 
   /* Send sense command to current drive to see if reset took.
      If this is the first system reset it defaults to drive 0,
@@ -594,10 +594,10 @@ static U32 FDC_reset(void)
     ((FDC_STATUS[0] & 0xc0) == 0)) {
 
      /* Send Specify command to controller */
-	 send_fdc(3);
-	 send_fdc(GetParm(0));
-	 send_fdc(GetParm(1));
-	 return(ok);
+   send_fdc(3);
+   send_fdc(GetParm(0));
+   send_fdc(GetParm(1));
+   return(ok);
  }
  return(ErcBadFDC);
 }
@@ -611,8 +611,8 @@ static U32 FDC_reset(void)
 ****************************************************************/
 static void interrupt fdisk_isr(void)
 {
-	ISendMsg(fd_exch, 0xfffffffd, 0xfffffffd);
-	EndOfIRQ(6);
+  ISendMsg(fd_exch, 0xfffffffd, 0xfffffffd);
+  EndOfIRQ(6);
 }
 
 /*=========================================================
@@ -624,9 +624,9 @@ static U8 cmos_type (U8 drive_nr)
  U8 drive_type;
  drive_type = 0;
  if (drive_nr)
- 	drive_type = ReadCMOS(0x10) & 0x0f;
+  drive_type = ReadCMOS(0x10) & 0x0f;
  else
- 	drive_type = (ReadCMOS(0x10) >> 4) & 0x0f;
+  drive_type = (ReadCMOS(0x10) >> 4) & 0x0f;
  return(drive_type);
 }
 
@@ -639,25 +639,25 @@ static U32 send_fdc(U8 parm)
 U32 i;
 U8  b, bjunk;
 
-i = 100;  /* try 100 times to send FDC command */
+i = 100;                                    /* try 100 times to send FDC command */
 do
 {
-	b = InByte(MSR_PORT);				/* Get I/O status byte */
-	MicroDelay(100);					/* 1.5 milliseconds between tries */
-	if (b & RQM) {
-		if (b & DIO) {  				/* He has something to send us... */
-			bjunk = InByte(DATA_PORT);	/* Eat it! */
-			MicroDelay(100);			/* 1.5 milliseconds between I/O */
-		}
-		else {							/* OK to send to him */
-			OutByte(parm,DATA_PORT);
-			MicroDelay(100);			/* 1.5 milliseconds between I/O */
-			return (ok);				/* Sent it OK */
-		}
-	}
+  b = InByte(MSR_PORT);                     /* Get I/O status byte */
+  MicroDelay(100);                          /* 1.5 milliseconds between tries */
+  if (b & RQM) {
+    if (b & DIO) {                          /* He has something to send us... */
+      bjunk = InByte(DATA_PORT);            /* Eat it! */
+      MicroDelay(100);                      /* 1.5 milliseconds between I/O */
+    }
+    else {                                  /* OK to send to him */
+      OutByte(parm,DATA_PORT);
+      MicroDelay(100);                      /* 1.5 milliseconds between I/O */
+      return (ok);                          /* Sent it OK */
+    }
+  }
  }
  while (i--);
- return (ErcSendFDC);		/* return ERROR */
+ return (ErcSendFDC);                       /* return ERROR */
 }
 
 /*==========================================================
@@ -684,18 +684,18 @@ erc = Alarm(fd_exch, 300);
 
 erc = WaitMsg(fd_exch, fd_msg);  /* Wait for message from ISR or Alarm */
 if (erc) {
-	KillAlarm(fd_exch);
-	return(erc); /* BAD NEWS FROM KERNEL!!! */
-	}
+  KillAlarm(fd_exch);
+  return(erc); /* BAD NEWS FROM KERNEL!!! */
+  }
 
 if (fd_msg[0] != 0xfffffffd)
 {
-	return(fdstatus.erc = ErcFDCTimeOut);
+  return(fdstatus.erc = ErcFDCTimeOut);
 }
 else {
-	KillAlarm(fd_exch);
-	return(fdstatus.erc = ok);
-	}
+  KillAlarm(fd_exch);
+  return(fdstatus.erc = ok);
+  }
 }
 
 
@@ -707,20 +707,20 @@ static U32 recal(void)
 {
 U32 erc;
 
- erc = send_fdc(7);							/* recal command (2 bytes) */
- if (!erc) erc = send_fdc(fd_drive);		/* second byte is drive */
+ erc = send_fdc(7);                         /* recal command (2 bytes) */
+ if (!erc) erc = send_fdc(fd_drive);        /* second byte is drive */
 
  /* wait for int on recal */
  if (!erc) erc = wait_int();
- if (!erc) erc = send_fdc(8);				/* Sense command */
- if (!erc) erc = results(2);				/* expect 2 bytes */
+ if (!erc) erc = send_fdc(8);               /* Sense command */
+ if (!erc) erc = results(2);                /* expect 2 bytes */
  if (!erc) {
-   if (FDC_STATUS[0] & 0x20)   				/* Check seek-Ok bit */
+   if (FDC_STATUS[0] & 0x20)                /* Check seek-Ok bit */
    {
-    if (FDC_STATUS[1]) return(ErcBadRecal);	/* Was it track 0? */
+    if (FDC_STATUS[1]) return(ErcBadRecal); /* Was it track 0? */
     return(ok);
    }
-   else return (ErcBadSeek);       			/* Seek bit NOT set */
+   else return (ErcBadSeek);                /* Seek bit NOT set */
  }
  return(erc);
 }
@@ -732,50 +732,50 @@ static U32 seek(void)
 {
 U32 erc;
 
- if ((seek_status & (1 << fd_drive)) == 0)	/* need recal */
+ if ((seek_status & (1 << fd_drive)) == 0)  /* need recal */
  {
 
   /* try 2 attemps at recalibrate, then error out */
   if (recal())
-  	if (erc = recal()) return (erc);  		/* try again */
+    if (erc = recal()) return (erc);        /* try again */
 
-  seek_status |= (1 << fd_drive); 			/* recal was done */
+  seek_status |= (1 << fd_drive);           /* recal was done */
 
-  LAST_TRACK[fd_drive] = 0; 				/* clear track number */
+  LAST_TRACK[fd_drive] = 0;                 /* clear track number */
 
   /* if we want track zero, then just wait for head and exit */
 
   if (fd_track == 0) {
-  	wait_for_head();
-  	return (ok);
-  	}
+    wait_for_head();
+    return (ok);
+    }
  }
 
  if (fdisk_table[fdstatus.type_now][14] != 0)
-	fd_track *= 2;
- if (LAST_TRACK[fd_drive] == fd_track)		/* already there */
-	 return(ok);
+  fd_track *= 2;
+ if (LAST_TRACK[fd_drive] == fd_track)      /* already there */
+   return(ok);
 
   /* update new position */
  LAST_TRACK[fd_drive] = fd_track;
 
- erc = send_fdc(0x0f);						/*Seek Cmd */
+ erc = send_fdc(0x0f);                      /*Seek Cmd */
  if (!erc) erc = send_fdc((fd_head << 2) | fd_drive);
  if (!erc) erc = send_fdc(fd_track);
 
   /* wait for int on seek command */
  if (!erc) erc = wait_int();
- if (!erc) erc = send_fdc(8);				/* Sense command */
- if (!erc) erc = results(2);				/* expect 2 bytes */
+ if (!erc) erc = send_fdc(8);               /* Sense command */
+ if (!erc) erc = results(2);                /* expect 2 bytes */
  if (!erc)
- 	if (!(FDC_STATUS[0] & 0x20))			/* Look for seek-Ok bit */
- 	{
-     seek_status &= ~(1 << fd_drive);		/* needs recal! */
-  	 erc = ErcBadSeek;
-  	 return (erc);
- 	}
+  if (!(FDC_STATUS[0] & 0x20))              /* Look for seek-Ok bit */
+  {
+     seek_status &= ~(1 << fd_drive);       /* needs recal! */
+     erc = ErcBadSeek;
+     return (erc);
+  }
  if (!erc)
-	 wait_for_head();
+   wait_for_head();
  return (ok);
 }
 
@@ -789,20 +789,20 @@ static U32 read_data(U8 *pDataRet)
 U16 tries;
 U8 status;
 
-	/* try 100 times while Busy */
+  /* try 100 times while Busy */
 
-	for (tries=0; tries<1000; tries++) {
-		status = InByte(MSR_PORT);
-		MicroDelay(100);
-		if (status & RQM) {						/* RQM set */
-			if (status & DIO) {					/* Direction IN if set */
-				*pDataRet = InByte(DATA_PORT);	/* Get the data byte */
-				MicroDelay(100);				/* digest it...*/
-				return(TRUE);
-			}
-		}
-	}
-	return(FALSE);
+  for (tries=0; tries<1000; tries++) {
+    status = InByte(MSR_PORT);
+    MicroDelay(100);
+    if (status & RQM) {                     /* RQM set */
+      if (status & DIO) {                   /* Direction IN if set */
+        *pDataRet = InByte(DATA_PORT);      /* Get the data byte */
+        MicroDelay(100);                    /* digest it...*/
+        return(TRUE);
+      }
+    }
+  }
+  return(FALSE);
 }
 
 
@@ -816,15 +816,15 @@ static U32 results(U32 expect)
 unsigned indx;
 U8 status;
 
-	indx = 0;
-	while (indx < expect) {
-		if (read_data(&status)) {
-			FDC_STATUS[indx++] = status;		/* save status */
-		 	MicroDelay(100);
-		}
-		else return(ErcResults);
-	}
-	return(0);
+  indx = 0;
+  while (indx < expect) {
+    if (read_data(&status)) {
+      FDC_STATUS[indx++] = status;          /* save status */
+      MicroDelay(100);
+    }
+    else return(ErcResults);
+  }
+  return(0);
 }
 
 
@@ -837,18 +837,18 @@ static void purge_fdc (void)
 {
  U8 b;
 
-	do {
-		b = InByte(MSR_PORT);
-		if (b & RQM) {
-		  	if (b & DIO) {
-				InByte(DATA_PORT);  /* eat the byte */
-				MicroDelay(100);   	/* Breath (1.5ms) */
-			 }
-			 else return;
-		}
-		else return;
-	}
-	while (1);
+  do {
+    b = InByte(MSR_PORT);
+    if (b & RQM) {
+        if (b & DIO) {
+        InByte(DATA_PORT);                  /* eat the byte */
+        MicroDelay(100);                    /* Breath (1.5ms) */
+       }
+       else return;
+    }
+    else return;
+  }
+  while (1);
 }
 
 /*======================================================
@@ -863,9 +863,9 @@ static void wait_for_head(void)
 U32 wait;
 
 if (fwrite) {
- wait = GetParm(9); /* Head settle for write in milliseconds */
+ wait = GetParm(9);                         /* Head settle for write in milliseconds */
  wait = (wait * 1000) / 15;
- MicroDelay(wait); 	 /* delay in 15 us increments */
+ MicroDelay(wait);                          /* delay in 15 us increments */
  }
 }
 
@@ -881,12 +881,12 @@ static U32 med_change(void)
 /* if no disk change indicated return OK */
 
  if (InByte(DIR_PORT) & DSKCHANGE_BIT) {
-	fdstatus.fNewMedia = 1;
- 	return (ErcNewMedia);
+  fdstatus.fNewMedia = 1;
+  return (ErcNewMedia);
  }
  else {
-	fdstatus.fNewMedia = 0;
- 	return (ok);
+  fdstatus.fNewMedia = 0;
+  return (ok);
  }
 }
 
@@ -909,17 +909,17 @@ U32 erc;
  /* If we got here, get controller error status */
 
  if (FDC_STATUS[1] & BIT7)
- 	erc = ErcSectNotFound;
+  erc = ErcSectNotFound;
  else if (FDC_STATUS[1] & BIT5)
- 	erc = ErcCRC;
+  erc = ErcCRC;
  else if (FDC_STATUS[1] & BIT4)
- 	erc = ErcOverRun;
+  erc = ErcOverRun;
  else if (FDC_STATUS[1] & BIT2)
- 	erc = ErcSectNotFound;
+  erc = ErcSectNotFound;
  else if (FDC_STATUS[1] & BIT1)
-	erc = ErcReadOnly;
+  erc = ErcReadOnly;
  else if (FDC_STATUS[1] & BIT0)
- 	erc = ErcAddrMark;
+  erc = ErcAddrMark;
  else fdstatus.erc = ErcBadFDC;
  return(erc);
 }
@@ -934,7 +934,7 @@ U32 erc;
 static U32 RdWrtVerf(U32 op)
 {
 U32 erc;
-S8  dmatype;			/* 0 = Verify, 1 = IN, 2 = Out */
+S8  dmatype;                                /* 0 = Verify, 1 = IN, 2 = Out */
 S8  retrys;
 U32 count;
 
@@ -944,61 +944,61 @@ count = fd_nr_sectors * 512;
 
 while ((fd_nr_sectors) && (!erc)) {
 
-	switch(op) {
-		case(CmdRead): 					/* Read */
-			dmatype = 1;
-			fd_fdc_command = FDC_READ;
-			break;
-		case(2): 					/* Write */
-			fwrite = 1;
-			dmatype = 2;
-			CopyData(fd_pData, sectbuf, 512);
-			fd_fdc_command = FDC_WRITE;
-			break;
-		case(3): 					/* Verify */
-			dmatype = 0;
-			fd_fdc_command = FDC_READ;
-	}
+  switch(op) {
+    case(CmdRead):                          /* Read */
+      dmatype = 1;
+      fd_fdc_command = FDC_READ;
+      break;
+    case(2):                                /* Write */
+      fwrite = 1;
+      dmatype = 2;
+      CopyData(fd_pData, sectbuf, 512);
+      fd_fdc_command = FDC_WRITE;
+      break;
+    case(3):                                /* Verify */
+      dmatype = 0;
+      fd_fdc_command = FDC_READ;
+  }
 
-	/*             PhyAddress  nBytes  ch   Type     Mode  */
-	erc = DmaSetUp(physectbuf, 512,    2,   dmatype, 1 );
+  /*             PhyAddress  nBytes  ch   Type     Mode  */
+  erc = DmaSetUp(physectbuf, 512,    2,   dmatype, 1 );
 
-	if (!erc) {
-	  while(retrys--)
-	  {
-	   erc = 0;
-	   if (!erc) erc = seek();
-	   if (!erc) erc = send_fdc(fd_fdc_command);
-	   if (!erc) erc = send_fdc(((fd_head <<2) & BIT2) | fd_drive);
-	   if (!erc) erc = send_fdc(fd_track);
-	   if (!erc) erc = send_fdc(fd_head);
-	   if (!erc) erc = send_fdc(fd_sector);
-	   if (!erc) erc = send_fdc(GetParm(3));
-	   if (!erc) erc = send_fdc(GetParm(4));
-	   if (!erc) erc = send_fdc(GetParm(5));
-	   if (!erc) erc = send_fdc(GetParm(6));
-	   if (!erc) erc = get_fdc_status();
-	   if (!erc) break;					/* exit loop with good operation */
-	   MicroDelay(200);					/* wait 3 milliseconds... */
-	  } /* While statement for 5 retrys */
-	}
+  if (!erc) {
+    while(retrys--)
+    {
+     erc = 0;
+     if (!erc) erc = seek();
+     if (!erc) erc = send_fdc(fd_fdc_command);
+     if (!erc) erc = send_fdc(((fd_head <<2) & BIT2) | fd_drive);
+     if (!erc) erc = send_fdc(fd_track);
+     if (!erc) erc = send_fdc(fd_head);
+     if (!erc) erc = send_fdc(fd_sector);
+     if (!erc) erc = send_fdc(GetParm(3));
+     if (!erc) erc = send_fdc(GetParm(4));
+     if (!erc) erc = send_fdc(GetParm(5));
+     if (!erc) erc = send_fdc(GetParm(6));
+     if (!erc) erc = get_fdc_status();
+     if (!erc) break;                       /* exit loop with good operation */
+     MicroDelay(200);                       /* wait 3 milliseconds... */
+    } /* While statement for 5 retrys */
+  }
 
-	if (!erc) {
-		if (op==CmdRead)
-			CopyData(sectbuf, fd_pData, 512);
-	    fdstatus.blocks_done++;
-	    fd_pData+=512;
-        --fd_nr_sectors;				/* One less sector */
-        ++fd_sector;					/* Next sector please */
+  if (!erc) {
+    if (op==CmdRead)
+      CopyData(sectbuf, fd_pData, 512);
+      fdstatus.blocks_done++;
+      fd_pData+=512;
+        --fd_nr_sectors;                    /* One less sector */
+        ++fd_sector;                        /* Next sector please */
         if (fd_sector > fdisk_table[fdstatus.type_now][4]) {
-        	fd_sector = 1;				/* back to sect one */
- 	       	++fd_head;					/* next head please */
-		}
+          fd_sector = 1;                    /* back to sect one */
+          ++fd_head;                        /* next head please */
+    }
         if (fd_head > 1) {
-        	fd_head = 0;				/* back to head 0 */
-        	++fd_track;					/* next track please */
-		}
-	}
+          fd_head = 0;                      /* back to head 0 */
+          ++fd_track;                       /* next track please */
+    }
+  }
 } /* while */
 return(erc);
 }
@@ -1015,10 +1015,10 @@ static U32 format_track(void)
 U32 erc;
 
  fd_fdc_command = FDC_FORMAT;
- fwrite = 1;      	/* indicate write operation */
+ fwrite = 1;                                /* indicate write operation */
 
  erc = DmaSetUp(fd_pData, 512, 2, 1, 1);
- if (!erc) erc = send_fdc(3);			/* specify command */
+ if (!erc) erc = send_fdc(3);               /* specify command */
  if (!erc) erc = send_fdc(GetParm(0));
  if (!erc) erc = send_fdc(GetParm(1));
  if (!erc) erc = seek();
@@ -1046,24 +1046,24 @@ head, cly, sector from dLBA.
 *******************************************/
 
 static U32 dev_op(U32 dDevice,
- 		    U32 dOpNum,
-		    U32 dLBA,
-		    U32 dnBlocks,
-		    S8  *pData)
+        U32 dOpNum,
+        U32 dLBA,
+        U32 dnBlocks,
+        S8  *pData)
 {
 U32 erc, j;
 
  fd_pData = pData;
  fwrite = 0;
- fdstatus.blocks_done = 0;	/* Reset values in Status record */
+ fdstatus.blocks_done = 0;                  /* Reset values in Status record */
  fdstatus.erc = 0;
 
  /* Set internal drive number */
 
  if (dDevice == 10)
- 	fd_drive = 0;
+  fd_drive = 0;
  else
- 	fd_drive = 1;
+  fd_drive = 1;
 
 /* Check to see if we have a leftover interrupt message from last
    command.  If so then we eat it (do nothing)
@@ -1072,24 +1072,24 @@ U32 erc, j;
  erc = CheckMsg(fd_exch, fd_msg);
 
  if (fd_drive==0){
-	if (!type0) return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type0;
-	}
+  if (!type0) return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type0;
+  }
  else {
-	if (!type1) return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type1;
-	}
+  if (!type1) return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type1;
+  }
 
  if (dLBA > fdstatus.BlocksMax) 
- 	{
+  {
 /* for troubleshooting
-	    xprintf("dLBA: %d, BlocksMax: %d, DriveType: %d\r\n",
-    	         dLBA, fdstatus.BlocksMax, fdstatus.type_now);
+      xprintf("dLBA: %d, BlocksMax: %d, DriveType: %d\r\n",
+               dLBA, fdstatus.BlocksMax, fdstatus.type_now);
 */
-	 	return(fdstatus.erc = ErcBadLBA);
-	}
+    return(fdstatus.erc = ErcBadLBA);
+  }
 
- fd_select(fd_drive);		/* turn motor on and select drive */
+ fd_select(fd_drive);                       /* turn motor on and select drive */
 
  /* set the data rate register to value the drive */
 
@@ -1105,18 +1105,18 @@ U32 erc, j;
 
  erc = med_change();
  if (erc) {
-		erc = recal();
-		fd_motoroff(fd_drive);
-		if (erc) {
-			return(fdstatus.erc=erc);
-		}
-		else
-			return(fdstatus.erc=ErcNewMedia);
+    erc = recal();
+    fd_motoroff(fd_drive);
+    if (erc) {
+      return(fdstatus.erc=erc);
+    }
+    else
+      return(fdstatus.erc=ErcNewMedia);
  }
 
 */
 
- fdstatus.BlocksMax = rgSectorMax[fdstatus.type_now];		/* set max sectors */
+ fdstatus.BlocksMax = rgSectorMax[fdstatus.type_now];   /* set max sectors */
 
  fd_nr_sectors = dnBlocks;
 
@@ -1136,25 +1136,25 @@ U32 erc, j;
 */
 
  switch(dOpNum) {
-	case(CmdNull):
-		fdstatus.erc = ok;				/* Null Command */
-		break;
-	case(CmdRead): 						/* Read */
-	case(CmdWrite): 					/* Write */
-	case(CmdVerify): 					/* Verify */
-		fdstatus.erc = RdWrtVerf(dOpNum);
-		break;
-	case(CmdFmtBlk): 					/*	Format Block */
-		fdstatus.erc = ErcBadOp;
-		break;
-	case(CmdFmtTrk):
-		break;							/* Format Track */
-	case(CmdSeekTrk): 					/* Seek Track */
-		break;
-	default:
-		fdstatus.erc = ErcBadOp;
-		break;
-	}
+  case(CmdNull):
+    fdstatus.erc = ok;                      /* Null Command */
+    break;
+  case(CmdRead):                            /* Read */
+  case(CmdWrite):                           /* Write */
+  case(CmdVerify):                          /* Verify */
+    fdstatus.erc = RdWrtVerf(dOpNum);
+    break;
+  case(CmdFmtBlk):                          /*  Format Block */
+    fdstatus.erc = ErcBadOp;
+    break;
+  case(CmdFmtTrk):
+    break;                                  /* Format Track */
+  case(CmdSeekTrk):                         /* Seek Track */
+    break;
+  default:
+    fdstatus.erc = ErcBadOp;
+    break;
+  }
 
  fd_motoroff(fd_drive);
  return(fdstatus.erc);
@@ -1171,33 +1171,33 @@ This is called by the PUBLIC call DeviceStat!
 *******************************************/
 
 static U32 dev_stat(U32 dDevice,
-			  S8 * pStatRet,
-			  U32 dStatusMax,
-			  U32 *pdStatusRet)
+        S8 * pStatRet,
+        U32 dStatusMax,
+        U32 *pdStatusRet)
 {
 S32 j;
 
  /* Set internal drive number */
  if (dDevice == 10)
- 	fd_drive=0;
+  fd_drive=0;
  else fd_drive = 1;
 
  if (fd_drive==0){
-	if (type0==0)
-		return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type0;
+  if (type0==0)
+    return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type0;
     fdstatus.nCyl  = fdisk_table[type0][11]+1;  /* total physical cyls */
-    fdstatus.nHead = 2;							/* total heads on device */
+    fdstatus.nHead = 2;                         /* total heads on device */
     fdstatus.nSectors= fdisk_table[type0][4];   /* Sectors per track */
-    fdstatus.nBPS = 512;						/* Bytes per sect */
+    fdstatus.nBPS = 512;                        /* Bytes per sect */
  }
  else {
-	if (type1==0) return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type1;
+  if (type1==0) return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type1;
     fdstatus.nCyl  = fdisk_table[type1][11]+1;  /* total physical cyls */
-    fdstatus.nHead = 2;							/* total heads on device */
+    fdstatus.nHead = 2;                         /* total heads on device */
     fdstatus.nSectors= fdisk_table[type1][4];   /* Sectors per track */
-    fdstatus.nBPS = 512;						/* Bytes per sect */
+    fdstatus.nBPS = 512;                        /* Bytes per sect */
  }
 
  /* set max sectors in status record */
@@ -1215,9 +1215,9 @@ S32 j;
  if (dStatusMax < sStatus) j = dStatusMax;
  else j = sStatus;
 
- CopyData(&fdstatus, pStatRet, j);		/* copy the status data */
+ CopyData(&fdstatus, pStatRet, j);    /* copy the status data */
 
- *pdStatusRet = j;		/* give em the size returned */
+ *pdStatusRet = j;    /* give em the size returned */
 
 return(0);
 }
@@ -1235,33 +1235,33 @@ This is called by the PUBLIC call DeviceInit!
 *******************************************/
 
 static S32 dev_init(U32  dDevice,
-			 S8  *pInitData,
-			 U32  sdInitData)
+       S8  *pInitData,
+       U32  sdInitData)
 
 {
 U32 i;
 
  /* Read the init status block in */
 
- if (sdInitData > sStatus) i = sStatus;		/* no more than 64 bytes! */
+ if (sdInitData > sStatus) i = sStatus;     /* no more than 64 bytes! */
  else i = sdInitData;
 
- CopyData(pInitData, &FDStatTmp, i);		/* copy in their init data */
+ CopyData(pInitData, &FDStatTmp, i);        /* copy in their init data */
 
  if (dDevice == 10)
- 	fd_drive=0;   			/* Set internal drive number */
+  fd_drive=0;                               /* Set internal drive number */
  else
- 	fd_drive = 1;
+  fd_drive = 1;
 
- if (fd_drive==0){						/* set up for drive 0 */
- 	type0 = FDStatTmp.type_now;
-	if (type0==0) return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type0;
+ if (fd_drive==0){                          /* set up for drive 0 */
+  type0 = FDStatTmp.type_now;
+  if (type0==0) return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type0;
  }
  else {
- 	type1 = FDStatTmp.type_now;
-	if (type1==0) return(fdstatus.erc = ErcDriveType);
-	fdstatus.type_now = type1;
+  type1 = FDStatTmp.type_now;
+  if (type1==0) return(fdstatus.erc = ErcDriveType);
+  fdstatus.type_now = type1;
  }
  fd_select(fd_drive);
  fdstatus.erc = FDC_reset();

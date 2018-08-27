@@ -167,17 +167,17 @@
 ;
 ;Video Equates and Types
 ;
-CRTCPort1   EQU 03D4h   ;Index port for CRTC
-CRTCPort2   EQU 03D5h   ;Data port for CRTC
-CRTCAddHi   EQU 0Ch     ;Register for lo byte of Video address
-CRTCAddLo   EQU 0Dh     ;Register for lo byte of Video address
-CRTCCurHi   EQU 0Eh     ;Register for lo byte of Cursor address
-CRTCCurLo   EQU 0Fh     ;Register for lo byte of Cursor address
-CRTC0C      DB 0        ;CRT Reg 0C HiByte address value
-CRTC0D      DB 0        ;CRT Reg 0D LoByte address value
+CRTCPort1   EQU 03D4h                   ;Index port for CRTC
+CRTCPort2   EQU 03D5h                   ;Data port for CRTC
+CRTCAddHi   EQU 0Ch                     ;Register for lo byte of Video address
+CRTCAddLo   EQU 0Dh                     ;Register for lo byte of Video address
+CRTCCurHi   EQU 0Eh                     ;Register for lo byte of Cursor address
+CRTCCurLo   EQU 0Fh                     ;Register for lo byte of Cursor address
+CRTC0C      DB  0                       ;CRT Reg 0C HiByte address value
+CRTC0D      DB  0                       ;CRT Reg 0D LoByte address value
 
-PUBLIC ddVidOwner   DD 1        ;JCB that currently owns video
-                                ;Default to monitor (Job 1)
+PUBLIC ddVidOwner   DD 1                ;JCB that currently owns video
+                                        ;Default to monitor (Job 1)
 
 ;End of Data & Equates
 ;
@@ -187,29 +187,29 @@ PUBLIC ddVidOwner   DD 1        ;JCB that currently owns video
 ;
 .CODE
 ;
-EXTRN GetpJCB NEAR
-EXTRN GetpCrntJCB NEAR
-EXTRN ReadDbgKbd NEAR
+EXTRN GetpJCB       NEAR
+EXTRN GetpCrntJCB   NEAR
+EXTRN ReadDbgKbd    NEAR
 EXTRN GetCrntJobNum NEAR
 
 ;InitVideo makes Video Screen 0 the default screen. That
 ;makes the VGATextBase address 0B8000h
 ;
 PUBLIC InitVideo:
-        MOV AL, CRTCAddHi       ;Index of hi byte
-        MOV DX, CRTCPort1       ;Index Port
-        OUT DX, AL
-        MOV AL, CRTC0C          ;hi byte value to send
-        MOV DX, CRTCPort2       ;Data Port
-        OUT DX, AL
-        ;
-        MOV AL, CRTCAddLo       ;Index of lo byte
-        MOV DX, CRTCPort1       ;Index Port
-        OUT DX, AL
-        MOV AL, CRTC0D          ;lo byte value to send
-        MOV DX, CRTCPort2       ;Data Port
-        OUT DX, AL
-        RETN
+    MOV   AL,CRTCAddHi                  ;Index of hi byte
+    MOV   DX,CRTCPort1                  ;Index Port
+    OUT   DX,AL
+    MOV   AL,CRTC0C                     ;hi byte value to send
+    MOV   DX,CRTCPort2                  ;Data Port
+    OUT   DX,AL
+                                        ;
+    MOV   AL,CRTCAddLo                  ;Index of lo byte
+    MOV   DX,CRTCPort1                  ;Index Port
+    OUT   DX,AL
+    MOV   AL,CRTC0D                     ;lo byte value to send
+    MOV   DX,CRTCPort2                  ;Data Port
+    OUT   DX,AL
+    RETN
 ;
 ;============================================================================
 ; BEGIN PUBLIC CODE FOR VIDEO
@@ -222,70 +222,70 @@ PUBLIC InitVideo:
 ddJobVidCV  EQU DWORD PTR [EBP+12]
 
 PUBLIC __SetVidOwner:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        MOV EAX, ddJobVidCV     ;
-        CMP EAX, ddVidOwner     ;Already own it?
-        JNE ChgVid01            ;No
-        XOR EAX, EAX            ;Yes
-        JMP ChgVidDone
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    MOV   EAX,ddJobVidCV                ;
+    CMP   EAX,ddVidOwner                ;Already own it?
+    JNE   ChgVid01                      ;No
+    XOR   EAX,EAX                       ;Yes
+    JMP   ChgVidDone
 ChgVid01:
-        CALL GetpJCB                    ;Leaves ptr to new vid JCB in EAX
-        CMP DWORD PTR [EAX+pVidMem] ,0  ;Got valid video memory???
-        JNE ChgVid02                    ;Yes
-        MOV EAX, ErcVidNum      ;NO! Give em an error!
-        JMP ChgVidDone
+    CALL  GetpJCB                       ;Leaves ptr to new vid JCB in EAX
+    CMP   DWORD PTR [EAX+pVidMem] ,0    ;Got valid video memory???
+    JNE   ChgVid02                      ;Yes
+    MOV   EAX,ErcVidNum                 ;NO! Give em an error!
+    JMP   ChgVidDone
 ChgVid02:
-        ;Save data on screen to CURRENT job's pVirtVid
-        MOV EAX, ddVidOwner
-        CALL GetpJCB
-        PUSH VGATextBase        ;Source
-        MOV EBX, [EAX+pVirtVid] ;Destination
-        PUSH EBX
-        PUSH 4000               ;Size of video
-        CALL FWORD PTR _CopyData    ;Do it!
+    ;Save data on screen to CURRENT job's pVirtVid
+    MOV   EAX,ddVidOwner
+    CALL  GetpJCB
+    PUSH  VGATextBase                   ;Source
+    MOV   EBX,[EAX+pVirtVid]            ;Destination
+    PUSH  EBX
+    PUSH  4000                          ;Size of video
+    CALL  FWORD PTR _CopyData           ;Do it!
 
-        ;Make pVidMem same as pVirtVid for CURRENT OWNER
-        MOV EAX, ddVidOwner
-        CALL GetpJCB            ;Leaves ptr to new vid JCB in EAX
-        MOV EBX, [EAX+pVirtVid]
-        MOV [EAX+pVidMem], EBX
+    ;Make pVidMem same as pVirtVid for CURRENT OWNER
+    MOV   EAX,ddVidOwner
+    CALL  GetpJCB                       ;Leaves ptr to new vid JCB in EAX
+    MOV   EBX,[EAX+pVirtVid]
+    MOV   [EAX+pVidMem],EBX
 
-        ;Update current video owner to NEW owner
+    ;Update current video owner to NEW owner
 
-        MOV EAX, ddJobVidCV     ;
-        MOV ddVidOwner, EAX
+    MOV   EAX,ddJobVidCV                ;
+    MOV   ddVidOwner,EAX
 
-        ;Copy in Data from new pVirtVid
+    ;Copy in Data from new pVirtVid
 
-        MOV EAX, ddVidOwner
-        CALL GetpJCB
-        MOV EBX, [EAX+pVirtVid] ;Source
-        PUSH EBX
-        PUSH VGATextBase        ;Destination
-        PUSH 4000               ;Size of video
-        CALL FWORD PTR _CopyData    ;Do it!
+    MOV   EAX,ddVidOwner
+    CALL  GetpJCB
+    MOV   EBX,[EAX+pVirtVid]            ;Source
+    PUSH  EBX
+    PUSH  VGATextBase                   ;Destination
+    PUSH  4000                          ;Size of video
+    CALL  FWORD PTR _CopyData           ;Do it!
 
-        ;Make new pVidMem real video screen for new owner
+    ;Make new pVidMem real video screen for new owner
 
-        MOV EAX, ddVidOwner
-        CALL GetpJCB
-        MOV EBX, VGATextBase
-        MOV [EAX+pVidMem], EBX
+    MOV   EAX,ddVidOwner
+    CALL  GetpJCB
+    MOV   EBX,VGATextBase
+    MOV   [EAX+pVidMem],EBX
 
-        ;Set Cursor position
+    ;Set Cursor position
 
-        MOV EAX, ddVidOwner
-        CALL GetpJCB
-        MOV ECX, EAX
-        MOV EBX, [ECX+CrntX]    ;Get current X for new screen
-        MOV EAX, [EBX+CrntY]    ;Current Y
-        CALL HardXY             ;Set it up
-        XOR EAX, EAX            ;No Error
+    MOV   EAX,ddVidOwner
+    CALL  GetpJCB
+    MOV   ECX,EAX
+    MOV   EBX,[ECX+CrntX]               ;Get current X for new screen
+    MOV   EAX,[EBX+CrntY]               ;Current Y
+    CALL  HardXY                        ;Set it up
+    XOR   EAX,EAX                       ;No Error
 ChgVidDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 4
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  4
 
 ;============================================================================
 ; SetNormVid - Sets the normal video attribute (color) used in
@@ -295,14 +295,14 @@ ChgVidDone:
 ddNormVid   EQU DWORD PTR [EBP+12]
 
 PUBLIC __SetNormVid:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;pJCB -> EAX
-        MOV EBX, ddNormVid      ;
-        MOV [EAX+NormAttr], EBX ;
-        XOR EAX, EAX
-        POP EBP                 ;
-        RETF 4
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;pJCB -> EAX
+    MOV   EBX,ddNormVid                 ;
+    MOV   [EAX+NormAttr],EBX            ;
+    XOR   EAX,EAX
+    POP   EBP                           ;
+    RETF  4
 
 ;============================================================================
 ; GetNormVid - Returns the normal video attribute (color) used in
@@ -312,15 +312,15 @@ PUBLIC __SetNormVid:
 pdNormVidRet EQU DWORD PTR [EBP+12]
 
 PUBLIC __GetNormVid:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;pJCB -> EAX
-        MOV EBX, [EAX+NormAttr] ;
-        MOV ESI, pdNormVidRet   ;
-        MOV [ESI], BL           ;
-        XOR EAX, EAX
-        POP EBP                 ;
-        RETF 4
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;pJCB -> EAX
+    MOV   EBX,[EAX+NormAttr]            ;
+    MOV   ESI,pdNormVidRet              ;
+    MOV   [ESI],BL                      ;
+    XOR   EAX,EAX
+    POP   EBP                           ;
+    RETF  4
 
 ;============================================================================
 ; GetVidOwner - Returns the Job number of current active video
@@ -330,41 +330,41 @@ PUBLIC __GetNormVid:
 pVidNumRet  EQU DWORD PTR [EBP+12]
 
 PUBLIC __GetVidOwner:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        MOV ESI, pVidNumRet     ;
-        MOV EAX, ddVidOwner     ;
-        MOV [ESI], EAX          ;
-        XOR EAX, EAX            ; no error obviously
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 4
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    MOV   ESI,pVidNumRet                ;
+    MOV   EAX,ddVidOwner                ;
+    MOV   [ESI],EAX                     ;
+    XOR   EAX,EAX                       ; no error obviously
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  4
 
 ;=============================================================================
 ; Clear caller's video screen (Use Space and Attr from JCB NormAttr)
 ;=============================================================================
 ;
 PUBLIC __ClrScr:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
-        MOV EDI,[EBX+pVidMem]   ;EDI points to his video memory
-        MOV EAX, [EBX+NormAttr] ;Attr
-        SHL EAX, 8              ;
-        MOV AL, 20h             ;
-        MOV DX, AX
-        SHL EAX, 16
-        MOV AX, DX              ;Fill Char & Attr
-        MOV ECX,0400h
-        CLD
-        REP STOSD
-        PUSH 0
-        PUSH 0
-        CALL FWORD PTR _SetXY   ;Erc in EAX on Return
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
+    MOV   EDI,[EBX+pVidMem]             ;EDI points to his video memory
+    MOV   EAX,[EBX+NormAttr]            ;Attr
+    SHL   EAX,8                         ;
+    MOV   AL,20h                        ;
+    MOV   DX,AX
+    SHL   EAX,16
+    MOV   AX,DX                         ;Fill Char & Attr
+    MOV   ECX,0400h
+    CLD
+    REP   STOSD
+    PUSH  0
+    PUSH  0
+    CALL  FWORD PTR _SetXY              ;Erc in EAX on Return
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF
 
 ;=============================================================================
 ; TTYOut:
@@ -377,96 +377,96 @@ dAttrText   EQU DWORD PTR [EBP+12]
 DataByte    EQU BYTE PTR [ECX]
 
 PUBLIC __TTYOut:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
-        MOV EAX, sTextOut       ;make sure count isn't null
-        OR EAX, EAX
-        JZ TTYDone
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
+    MOV   EAX,sTextOut                  ;make sure count isn't null
+    OR    EAX,EAX
+    JZ    TTYDone
 
 TTY00:
-        MOV EAX,[EBX+CrntX]     ; EAX has CrntX (col)
-        MOV EDX,[EBX+CrntY]     ; EDX has CrntY (line)
-        MOV ECX,pTextOut
+    MOV   EAX,[EBX+CrntX]               ; EAX has CrntX (col)
+    MOV   EDX,[EBX+CrntY]               ; EDX has CrntY (line)
+    MOV   ECX,pTextOut
 
-        CMP DataByte,0Ah        ; LF?
-        JNE TTY02
-        INC EDX
-        CMP EDX,[EBX+nLines]    ; Equal to or past the bottom?
-        JB  TTY06               ; No
-        JMP TTYScr              ; Yes, goto scroll
+    CMP   DataByte,0Ah                  ; LF?
+    JNE   TTY02
+    INC   EDX
+    CMP   EDX,[EBX+nLines]              ; Equal to or past the bottom?
+    JB    TTY06                         ; No
+    JMP   TTYScr                        ; Yes, goto scroll
 TTY02:
-        CMP DataByte,0Dh        ; CR?
-        JNE TTY03
-        MOV EAX,0
-        JMP TTY06
+    CMP   DataByte,0Dh                  ; CR?
+    JNE   TTY03
+    MOV   EAX,0
+    JMP   TTY06
 TTY03:
-        CMP DataByte,08h        ; BackSpace?
-        JNE TTY04
-        CMP EAX,0
-        JE  TTY04
-        DEC EAX
-        JMP TTY06
+    CMP   DataByte,08h                  ; BackSpace?
+    JNE   TTY04
+    CMP   EAX,0
+    JE    TTY04
+    DEC   EAX
+    JMP   TTY06
 TTY04:
-        PUSH EBX                ;Save pointer to VCB
+    PUSH  EBX                           ;Save pointer to VCB
 
-        PUSH EAX                ;X (Param 1)
-        PUSH EDX                ;Y (Param 2)
-        PUSH ECX                ;pointer to text char (Param3)
-        PUSH 1                  ;Param 4 (nchars)
-        MOV ECX,dAttrText       ;
-        PUSH ECX                ;Param 5
-        CALL FWORD PTR _PutVidChars ;
-        POP EBX                 ;restore ptr to VCB
-        CMP EAX, 0
-        JNE TTYDone
-        MOV EAX, [EBX+CrntX]
-        MOV EDX, [EBX+CrntY]
-        INC EAX                 ;Next column
-        CMP EAX,[EBX+nCols]
-        JNE TTY06               ;Make cursor follow
-        MOV EAX,0
-        INC EDX
-        CMP EDX,[EBX+nLines]    ; past the bottom?
-        JNE TTY06               ; No - goto 06 else fall thru
+    PUSH  EAX                           ;X (Param 1)
+    PUSH  EDX                           ;Y (Param 2)
+    PUSH  ECX                           ;pointer to text char (Param3)
+    PUSH  1                             ;Param 4 (nchars)
+    MOV   ECX,dAttrText                 ;
+    PUSH  ECX                           ;Param 5
+    CALL  FWORD PTR _PutVidChars        ;
+    POP   EBX                           ;restore ptr to VCB
+    CMP   EAX,0
+    JNE   TTYDone
+    MOV   EAX,[EBX+CrntX]
+    MOV   EDX,[EBX+CrntY]
+    INC   EAX                           ;Next column
+    CMP   EAX,[EBX+nCols]
+    JNE   TTY06                         ;Make cursor follow
+    MOV   EAX,0
+    INC   EDX
+    CMP   EDX,[EBX+nLines]              ; past the bottom?
+    JNE   TTY06                         ; No - goto 06 else fall thru
 
 TTYScr:
-        DEC EDX                 ; back up one line
-        PUSH EAX                ;Save registers (scroll eats em)
-        PUSH EBX
-        PUSH ECX
-        PUSH EDX
+    DEC   EDX                           ; back up one line
+    PUSH  EAX                           ;Save registers (scroll eats em)
+    PUSH  EBX
+    PUSH  ECX
+    PUSH  EDX
 
-        PUSH 0
-        PUSH 0
-        PUSH 80
-        PUSH 25
-        PUSH 1                  ;fUP (non zero)
-        CALL FWORD PTR _ScrollVid   ;Ignore error
-        POP EDX                 ;restore registers
-        POP ECX
-        POP EBX
-        POP EAX                 ;Fall thru to
+    PUSH  0
+    PUSH  0
+    PUSH  80
+    PUSH  25
+    PUSH  1                             ;fUP (non zero)
+    CALL  FWORD PTR _ScrollVid          ;Ignore error
+    POP   EDX                           ;restore registers
+    POP   ECX
+    POP   EBX
+    POP   EAX                           ;Fall thru to
 
 TTY06:
-        PUSH EBX                ;save ptr to pJCB
+    PUSH  EBX                           ;save ptr to pJCB
 
-        PUSH EAX
-        PUSH EDX
-        CALL FWORD PTR _SetXY
+    PUSH  EAX
+    PUSH  EDX
+    CALL  FWORD PTR _SetXY
 
-        POP EBX                 ;Restore ptr to VCB
-        CMP EAX, 0
-        JNE TTYDone
-        DEC sTextOut
-        JZ TTYDone
-        INC pTextOut
-        JMP TTY00               ; Go back for next char
+    POP   EBX                           ;Restore ptr to VCB
+    CMP   EAX,0
+    JNE   TTYDone
+    DEC   sTextOut
+    JZ    TTYDone
+    INC   pTextOut
+    JMP   TTY00                         ; Go back for next char
 TTYDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 12
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  12
 
 
 
@@ -494,39 +494,39 @@ sADDChars   EQU DWORD PTR [EBP+16] ;Param 3 sChars
 sADDColor   EQU DWORD PTR [EBP+12] ;Param 4 Attr
 
 PUBLIC __PutVidAttrs:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
 
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
+    CALL GetpCrntJCB                    ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
 
-        MOV EDI, [EBX+pVidMem]  ;point to this VCBs video memory
-        MOV EBX,oADDx           ;x Position
-        SHL EBX,1               ;Times 2
-        MOV EAX,oADDy           ;y Position
-        MOV ECX,0A0h            ;Times 160 (char/attrs per line)
-        MUL ECX                 ;Times nColumns
-        ADD EAX,EBX
-        CMP EAX,0F9Eh           ;Last legal posn on screen
-        JBE PutAttrs00
-        MOV EAX, ErcVidParam
-        JMP PcADone
+    MOV   EDI,[EBX+pVidMem]             ;point to this VCBs video memory
+    MOV   EBX,oADDx                     ;x Position
+    SHL   EBX,1                         ;Times 2
+    MOV   EAX,oADDy                     ;y Position
+    MOV   ECX,0A0h                      ;Times 160 (char/attrs per line)
+    MUL   ECX                           ;Times nColumns
+    ADD   EAX,EBX
+    CMP   EAX,0F9Eh                     ;Last legal posn on screen
+    JBE   PutAttrs00
+    MOV   EAX,ErcVidParam
+    JMP   PcADone
 PutAttrs00:
-        MOV ECX,sADDChars
-        OR ECX, ECX
-        JZ PcADone
-        ADD EDI,EAX
-        MOV EAX,sADDColor
-        CLD
+    MOV   ECX,sADDChars
+    OR    ECX,ECX
+    JZ    PcADone
+    ADD   EDI,EAX
+    MOV   EAX,sADDColor
+    CLD
 pcAMore:
-        INC EDI                 ;Pass the char value
-        STOSB                   ;Move Color in
-        LOOP pcAMore
-        XOR EAX, EAX            ;No Error!
+    INC   EDI                           ;Pass the char value
+    STOSB                               ;Move Color in
+    LOOP  pcAMore
+    XOR   EAX,EAX                       ;No Error!
 pcADone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 16
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  16
 
 ;=============================================================================
 ; PutVidChars:
@@ -551,40 +551,40 @@ sDDChars    EQU DWORD PTR [EBP+16] ;Param 4 sChars
 sDDColor    EQU DWORD PTR [EBP+12] ;Param 5 Attr
 
 PUBLIC __PutVidChars:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-		CLI
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
-        MOV EDI, [EBX+pVidMem]  ;point to this VCBs video memory
-		STI
-        MOV EBX,oDDx
-        SHL EBX,1               ;Times 2
-        MOV EAX,oDDy
-        MOV ECX,0A0h            ;Times 160
-        MUL ECX                 ;Times nColumns
-        ADD EAX,EBX
-        CMP EAX,0F9Eh           ;Last legal posn on screen
-        JBE PutChars00
-        MOV EAX, ErcVidParam
-        JMP PcDone
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CLI
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
+    MOV   EDI,[EBX+pVidMem]             ;point to this VCBs video memory
+    STI
+    MOV   EBX,oDDx
+    SHL   EBX,1                         ;Times 2
+    MOV   EAX,oDDy
+    MOV   ECX,0A0h                      ;Times 160
+    MUL   ECX                           ;Times nColumns
+    ADD   EAX,EBX
+    CMP   EAX,0F9Eh                     ;Last legal posn on screen
+    JBE   PutChars00
+    MOV   EAX,ErcVidParam
+    JMP   PcDone
 PutChars00:
-        MOV ECX,sDDChars
-        OR ECX, ECX
-        JZ PcDone
-        MOV ESI,pDDChars
-        ADD EDI,EAX
-        MOV EAX,sDDColor
-        CLD
+    MOV   ECX,sDDChars
+    OR    ECX,ECX
+    JZ    PcDone
+    MOV   ESI,pDDChars
+    ADD   EDI,EAX
+    MOV   EAX,sDDColor
+    CLD
 pcMore:
-        MOVSB                   ;Move Char in
-        STOSB                   ;Move Color in
-        LOOP pcMore
-        XOR EAX, EAX            ;No Error!
+    MOVSB                               ;Move Char in
+    STOSB                               ;Move Color in
+    LOOP  pcMore
+    XOR   EAX,EAX                       ;No Error!
 pcDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 20
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  20
 
 ;=============================================================================
 ;GetVidChar(ddCol,ddLine,pCharRet,pAttrRet)
@@ -605,36 +605,36 @@ pGDDCRet    EQU DWORD PTR [EBP+16] ;Param 3 pCharRet
 pGDDARet    EQU DWORD PTR [EBP+12] ;Param 4 pAttrRet
 
 PUBLIC __GetVidChar:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
 
-        MOV EDI, [EBX+pVidMem]  ;point to this VCBs video memory
-        MOV EBX,oGDDx
-        SHL EBX,1               ;Times 2
-        MOV EAX,oGDDy
-        MOV ECX,0A0h            ;Times 160
-        MUL ECX                 ;Times nColumns
-        ADD EAX,EBX
-        CMP EAX,0F9Eh           ;Last legal posn on screen
-        JBE GetChar00
-        MOV EAX, ErcVidParam
-        JMP PcGDone
+    MOV   EDI,[EBX+pVidMem]             ;point to this VCBs video memory
+    MOV   EBX,oGDDx
+    SHL   EBX,1                         ;Times 2
+    MOV   EAX,oGDDy
+    MOV   ECX,0A0h                      ;Times 160
+    MUL   ECX                           ;Times nColumns
+    ADD   EAX,EBX
+    CMP   EAX,0F9Eh                     ;Last legal posn on screen
+    JBE   GetChar00
+    MOV   EAX,ErcVidParam
+    JMP   PcGDone
 GetChar00:
-        ADD EDI,EAX             ;EDI now points to char
-        MOV ESI,pGDDCRet
-        MOV AL, [EDI]
-        MOV [ESI], AL           ;Give them the char
-        INC EDI                 ;Move to Attr
-        MOV ESI,pGDDARet
-        MOV AL, [EDI]
-        MOV [ESI], AL           ;Give them the Attr
-        XOR EAX, EAX            ;No Error!
+    ADD   EDI,EAX                       ;EDI now points to char
+    MOV   ESI,pGDDCRet
+    MOV   AL,[EDI]
+    MOV   [ESI],AL                      ;Give them the char
+    INC   EDI                           ;Move to Attr
+    MOV   ESI,pGDDARet
+    MOV   AL,[EDI]
+    MOV   [ESI],AL                      ;Give them the Attr
+    XOR   EAX,EAX                       ;No Error!
 pcGDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 20
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  20
 ;=============================================================================
 ; ScrollVid:
 ; This scrolls the defined area up or down one line.
@@ -656,100 +656,100 @@ nddLines    EQU DWORD PTR [EBP+16] ;Param 4 Number of Lines
 ddfUP       EQU DWORD PTR [EBP+12] ;Param 5 Attr
 
 PUBLIC __ScrollVid:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX            ;Save pJCB & use in EBX
-        MOV EAX, oULX
-        CMP EAX, 79
-        JA svErcExit
-        ADD EAX, nddCols
-        CMP EAX, 80
-        JA svErcExit
-        MOV EAX, oULY
-        CMP EAX, 24
-        JA svErcExit
-        ADD EAX, nddLines
-        CMP EAX, 25
-        JA svErcExit
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX                       ;Save pJCB & use in EBX
+    MOV   EAX,oULX
+    CMP   EAX,79
+    JA    svErcExit
+    ADD   EAX,nddCols
+    CMP   EAX,80
+    JA    svErcExit
+    MOV   EAX,oULY
+    CMP   EAX,24
+    JA    svErcExit
+    ADD   EAX,nddLines
+    CMP   EAX,25
+    JA    svErcExit
 
-        CMP ddfUP, 0        ;Scroll UP?
-        JNE svUP0           ;Yes... Scroll UP!
+    CMP   ddfUP,0                       ;Scroll UP?
+    JNE   svUP0                         ;Yes... Scroll UP!
 
 ;Scroll DOWN begins
 
-        MOV EAX, oULY       ;First line
-        ADD EAX, nddLines   ;Last line
-        MOV ECX, 160
-        MUL ECX                 ;times nBytes per line
-        MOV EDI, [EBX+pVidMem]  ;EDI points to video memory 0,0
-        MOV EDX, EBX            ;Save pJCB
-        ADD EDI, EAX            ;EDI is ptr to 1st dest line
-        ADD EDI, oULX       ;offset into line
-        ADD EDI, oULX       ;add again for attributes
-        MOV ESI, EDI        ;
-        SUB ESI, 160        ;ESI is 1st source line
-        MOV EBX, ESI        ;Save in EBX for reload
-        MOV EAX, nDDLines   ;How many lines to move
-        DEC EAX             ;one less than window height
+    MOV   EAX,oULY                      ;First line
+    ADD   EAX,nddLines                  ;Last line
+    MOV   ECX,160
+    MUL   ECX                           ;times nBytes per line
+    MOV   EDI,[EBX+pVidMem]             ;EDI points to video memory 0,0
+    MOV   EDX,EBX                       ;Save pJCB
+    ADD   EDI,EAX                       ;EDI is ptr to 1st dest line
+    ADD   EDI,oULX                      ;offset into line
+    ADD   EDI,oULX                      ;add again for attributes
+    MOV   ESI,EDI                       ;
+    SUB   ESI,160                       ;ESI is 1st source line
+    MOV   EBX,ESI                       ;Save in EBX for reload
+    MOV   EAX,nDDLines                  ;How many lines to move
+    DEC   EAX                           ;one less than window height
 svDOWN1:
-        MOV ECX, nddCols    ;How many WORDS per line to move
-        REP MOVSW           ;Move a line (of WORDS!)
-        MOV EDI, EBX        ;Reload Dest to next line
-        MOV ESI, EDI
-        SUB ESI, 160
-        MOV EBX, ESI        ;Save again
-        DEC EAX
-        JNZ svDOWN1
-        MOV EAX, [EDX+NormAttr] ;Normal video attributes!!!
-        SHL EAX, 8
-        MOV AL, 20h             ;Space
-        MOV EDI, EBX            ;Put the last line into EDI
-        MOV ECX, nddCols
-        CLD
-        REP STOSW
-        XOR EAX, EAX        ;No error
-        JMP svDone
-                            ;No... scroll down begins
+    MOV   ECX,nddCols                   ;How many WORDS per line to move
+    REP   MOVSW                         ;Move a line (of WORDS!)
+    MOV   EDI,EBX                       ;Reload Dest to next line
+    MOV   ESI,EDI
+    SUB   ESI,160
+    MOV   EBX,ESI                       ;Save again
+    DEC   EAX
+    JNZ   svDOWN1
+    MOV   EAX,[EDX+NormAttr]            ;Normal video attributes!!!
+    SHL   EAX,8
+    MOV   AL,20h                        ;Space
+    MOV   EDI,EBX                       ;Put the last line into EDI
+    MOV   ECX,nddCols
+    CLD
+    REP   STOSW
+    XOR   EAX,EAX                       ;No error
+    JMP   svDone
+                                        ;No... scroll down begins
 svUP0:
-        MOV EAX, oULY       ;First line
-        MOV ECX, 160
-        MUL ECX                 ;times nBytes per line
-        MOV EDI, [EBX+pVidMem]  ;EDI points to video memory 0,0
-        MOV EDX, EBX            ;Save pJCB
-        ADD EDI, EAX            ;EDI is ptr to 1st dest line
-        ADD EDI, oULX       ;offset into line
-        ADD EDI, oULX       ;add again for attributes
-        MOV ESI, EDI        ;
-        ADD ESI, 160        ;ESI is 1st source line
-        MOV EBX, ESI        ;Save in EBX for reload
-        MOV EAX, nDDLines   ;How many lines to move
-        DEC EAX             ;two less than window height
+    MOV   EAX,oULY                      ;First line
+    MOV   ECX,160
+    MUL   ECX                           ;times nBytes per line
+    MOV   EDI,[EBX+pVidMem]             ;EDI points to video memory 0,0
+    MOV   EDX,EBX                       ;Save pJCB
+    ADD   EDI,EAX                       ;EDI is ptr to 1st dest line
+    ADD   EDI,oULX                      ;offset into line
+    ADD   EDI,oULX                      ;add again for attributes
+    MOV   ESI,EDI                       ;
+    ADD   ESI,160                       ;ESI is 1st source line
+    MOV   EBX,ESI                       ;Save in EBX for reload
+    MOV   EAX,nDDLines                  ;How many lines to move
+    DEC   EAX                           ;two less than window height
 svUP1:
-        MOV ECX, nddCols    ;How many WORDS per line to move
-        REP MOVSW           ;Move a line (of WORDS!)
-        MOV EDI, EBX        ;Reload Dest to next line
-        MOV ESI, EDI
-        ADD ESI, 160
-        MOV EBX, ESI        ;Save again
-        DEC EAX
-        JNZ svUP1
-        MOV EAX, [EDX+NormAttr] ;Normal video attributes!!!
-        SHL EAX, 8
-        MOV AL, 20h             ;Space
-        MOV EDI, EBX        ;Put the last line into EDI
-        SUB EDI, 160
-        MOV ECX, nddCols
-        CLD
-        REP STOSW
-        XOR EAX, EAX        ;No error
-        JMP svDone
-svErcExit:                  ;Error exits will jump here
-        MOV EAX, ErcVidParam
+    MOV   ECX,nddCols                   ;How many WORDS per line to move
+    REP   MOVSW                         ;Move a line (of WORDS!)
+    MOV   EDI,EBX                       ;Reload Dest to next line
+    MOV   ESI,EDI
+    ADD   ESI,160
+    MOV   EBX,ESI                       ;Save again
+    DEC   EAX
+    JNZ   svUP1
+    MOV   EAX,[EDX+NormAttr]            ;Normal video attributes!!!
+    SHL   EAX,8
+    MOV   AL,20h                        ;Space
+    MOV   EDI,EBX                       ;Put the last line into EDI
+    SUB   EDI,160
+    MOV   ECX,nddCols
+    CLD
+    REP   STOSW
+    XOR   EAX,EAX                       ;No error
+    JMP   svDone
+svErcExit:                              ;Error exits will jump here
+    MOV   EAX,ErcVidParam
 svDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 20
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  20
 ;
 ;=============================================================
 ; HardXY - Intenal  Internal to support SetXY and SetVidOwner
@@ -763,25 +763,25 @@ svDone:
 ;   None
 
 HardXY:
-        MOV ECX,80
-        MUL ECX                 ; Line * 80
-        ADD EAX,EBX             ; Line plus column
-        MOV DX,CRTCPort1        ; Index register
-        PUSH EAX
-        MOV AL,CRTCCurLo
-        OUT DX,AL               ; Index 0Fh for low byte
-        POP EAX
-        MOV DX,CRTCPort2        ; Data register
-        OUT DX,AL               ; Send Low byte out
-        SHR EAX,08              ; shift hi byte into AL
-        PUSH EAX
-        MOV DX,CRTCPort1
-        MOV AL,CRTCCurHi
-        OUT DX,AL               ; Index for High byte
-        POP EAX
-        MOV DX,CRTCPort2
-        OUT DX,AL               ; Send High byte out
-        RETN
+    MOV   ECX,80
+    MUL   ECX                           ; Line * 80
+    ADD   EAX,EBX                       ; Line plus column
+    MOV   DX,CRTCPort1                  ; Index register
+    PUSH  EAX
+    MOV   AL,CRTCCurLo
+    OUT   DX,AL                         ; Index 0Fh for low byte
+    POP   EAX
+    MOV   DX,CRTCPort2                  ; Data register
+    OUT   DX,AL                         ; Send Low byte out
+    SHR   EAX,08                        ; shift hi byte into AL
+    PUSH  EAX
+    MOV   DX,CRTCPort1
+    MOV   AL,CRTCCurHi
+    OUT   DX,AL                         ; Index for High byte
+    POP   EAX
+    MOV   DX,CRTCPort2
+    OUT   DX,AL                         ; Send High byte out
+    RETN
 ;
 ;=============================================================================
 ; SetXY:
@@ -794,28 +794,28 @@ NewX        EQU DWORD PTR [EBP+16]
 NewY        EQU DWORD PTR [EBP+12]
 
 PUBLIC __SetXY:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
 
-        MOV ECX,NewX            ; Column
-        MOV EDX,NewY            ; Line
-        MOV [EBX+CrntX],ECX     ; This saves it in the VCB
-        MOV [EBX+CrntY],EDX     ;
+    MOV   ECX,NewX                      ; Column
+    MOV   EDX,NewY                      ; Line
+    MOV   [EBX+CrntX],ECX               ; This saves it in the VCB
+    MOV   [EBX+CrntY],EDX               ;
 
-        CALL GetCrntJobNum      ;Leaves ptr to current JCB in EAX
-        CMP EAX, ddVidOwner
-        JNE GotoXYDone          ;If not on Active screen, skip it
+    CALL  GetCrntJobNum                 ;Leaves ptr to current JCB in EAX
+    CMP   EAX,ddVidOwner
+    JNE   GotoXYDone                    ;If not on Active screen, skip it
 
-        MOV EAX,NewY            ;Setup to call HardXY
-        MOV EBX,NewX
-        CALL HardXY
+    MOV   EAX,NewY                      ;Setup to call HardXY
+    MOV   EBX,NewX
+    CALL  HardXY
 GotoXYDone:
-        XOR EAX,EAX             ;No Error
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 8
+    XOR   EAX,EAX                       ;No Error
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  8
 
 ;=============================================================================
 ; GetXY:
@@ -827,22 +827,22 @@ pXret       EQU DWORD PTR [EBP+16]
 pYret       EQU DWORD PTR [EBP+12]
 
 PUBLIC __GetXY:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, EAX
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,EAX
 
-        MOV EAX,[EBX+CrntX]     ; Column
-        MOV ESI,pXret
-        MOV [ESI], EAX
-        MOV EAX,[EBX+CrntY]     ; Line
-        MOV ESI,pYret
-        MOV [ESI], EAX
-        XOR EAX,EAX
+    MOV   EAX,[EBX+CrntX]               ; Column
+    MOV   ESI,pXret
+    MOV   [ESI],EAX
+    MOV   EAX,[EBX+CrntY]               ; Line
+    MOV   ESI,pYret
+    MOV   [ESI],EAX
+    XOR   EAX,EAX
 QXYDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 8
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  8
 
 
 ;=============================================================================
@@ -891,133 +891,133 @@ EditY           EQU DWORD PTR [EBP-12]
 KeyCode         EQU DWORD PTR [EBP-16]
 
 PUBLIC __EditLine:
-        PUSH EBP                ;
-        MOV EBP,ESP             ;
-        SUB ESP, 16
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    SUB   ESP,16
 
-        CMP ddSzCrnt, 80     ;Is it currently too long?
-        JA BadEdit
-        CMP ddSzMax, 80      ;Is Max len to long?
-        JA BadEdit
-        MOV EAX, ddSzCrnt
-        CMP EAX, ddSzMax     ;Is Crnt len > Max???
-        JA BadEdit
+    CMP   ddSzCrnt,80                   ;Is it currently too long?
+    JA    BadEdit
+    CMP   ddSzMax,80                    ;Is Max len to long?
+    JA    BadEdit
+    MOV   EAX,ddSzCrnt
+    CMP   EAX,ddSzMax                   ;Is Crnt len > Max???
+    JA    BadEdit
 
-        LEA EAX, EditX          ;Get current cursor posns in local vars
-        PUSH EAX
-        LEA EAX, EditY
-        PUSH EAX
-        CALL FWORD PTR _GetXY
-        CMP EAX, 0
-        JNE EditDone         ;Bad Erc from call
+    LEA   EAX,EditX                     ;Get current cursor posns in local vars
+    PUSH  EAX
+    LEA   EAX,EditY
+    PUSH  EAX
+    CALL  FWORD PTR _GetXY
+    CMP   EAX,0
+    JNE   EditDone                      ;Bad Erc from call
 
-        MOV EAX, EditX
-        ADD EAX, ddSzCrnt
-        MOV PosnX, EAX       ;make PosnX end of string
+    MOV   EAX,EditX
+    ADD   EAX,ddSzCrnt
+    MOV   PosnX,EAX                     ;make PosnX end of string
 
-        MOV ECX, ddSzMax
-        SUB ECX, ddSzCrnt    ;ECX  how many bytes to zero
-        JZ  EdLn01           ;None to zero out
-        MOV ESI, pEdString   ;Initialize currrent string
-        ADD ESI, ddSzCrnt    ;ESI ptr to 1st empty byte
-        MOV AL, 20h          ;fill with spaces
+    MOV   ECX,ddSzMax
+    SUB   ECX,ddSzCrnt                  ;ECX  how many bytes to zero
+    JZ    EdLn01                        ;None to zero out
+    MOV   ESI,pEdString                 ;Initialize currrent string
+    ADD   ESI,ddSzCrnt                  ;ESI ptr to 1st empty byte
+    MOV   AL,20h                        ;fill with spaces
 Edln00:
-        MOV [ESI], AL
-        INC ESI
-        LOOP Edln00
+    MOV   [ESI],AL
+    INC   ESI
+    LOOP  Edln00
 
 EdLn01:
-        PUSH PosnX
-        PUSH EditY
-        CALL FWORD PTR _SetXY
-        CMP EAX, 0
-        JNE EditDone
+    PUSH  PosnX
+    PUSH  EditY
+    CALL  FWORD PTR _SetXY
+    CMP   EAX,0
+    JNE   EditDone
 
 EdLn02:
-        PUSH EditX              ;Display current string
-        PUSH EditY
-        PUSH pEdString
-        PUSH ddSzMax
-        PUSH dEditAttr          ;Attribute they selected
-        CALL FWORD PTR _PutVidChars
-        CMP EAX, 0
-        JNE EditDone
+    PUSH  EditX                         ;Display current string
+    PUSH  EditY
+    PUSH  pEdString
+    PUSH  ddSzMax
+    PUSH  dEditAttr                     ;Attribute they selected
+    CALL  FWORD PTR _PutVidChars
+    CMP   EAX,0
+    JNE   EditDone
 EdLn03:
-        LEA EAX, KeyCode
-        PUSH EAX
-        CMP ddVidOwner, 2       ;Debugger???
-        JE EdLn035
-        PUSH 1                  ;Wait for a key
-        CALL FWORD PTR _ReadKbd ;Get a key
-        JMP SHORT EdLn036
+    LEA   EAX,KeyCode
+    PUSH  EAX
+    CMP   ddVidOwner,2                  ;Debugger???
+    JE    EdLn035
+    PUSH  1                             ;Wait for a key
+    CALL  FWORD PTR _ReadKbd            ;Get a key
+    JMP   SHORT EdLn036
 EdLn035:
-        CALL ReadDbgKbd
+    CALL  ReadDbgKbd
 EdLn036:
-        MOV EAX, KeyCode
-        AND EAX, 07Fh
-        OR  EAX, EAX
-        JZ  EdLn03
-        CMP EAX, 08h            ;BackSpace?
-        JNE EdLn04              ;No - Next test
+    MOV   EAX,KeyCode
+    AND   EAX,07Fh
+    OR    EAX,EAX
+    JZ    EdLn03
+    CMP   EAX,08h                       ;BackSpace?
+    JNE   EdLn04                        ;No - Next test
 EdLn037:
-        CMP ddSzCrnt, 0
-        JE EdLn01
-        DEC PosnX
-        DEC ddSzCrnt
-        MOV ESI, pEdString
-        MOV ECX, ddSzCrnt
-        MOV BYTE PTR [ESI+ECX], 20h
-        JMP Edln01
-EdLn04: CMP EAX, 03h            ;Left?
-        JNE EdLn045             ;No - Next test
-        JMP EdLn037
+    CMP   ddSzCrnt,0
+    JE    EdLn01
+    DEC   PosnX
+    DEC   ddSzCrnt
+    MOV   ESI,pEdString
+    MOV   ECX,ddSzCrnt
+    MOV   BYTE PTR [ESI+ECX],20h
+    JMP   Edln01
+EdLn04: CMP EAX,03h                     ;Left?
+    JNE   EdLn045                       ;No - Next test
+    JMP   EdLn037
 EdLn045:
-        CMP EAX, 83h            ;Num-Left?
-        JNE EdLn046             ;No - Next test
-        JMP EdLn037
+    CMP   EAX,83h                       ;Num-Left?
+    JNE   EdLn046                       ;No - Next test
+    JMP   EdLn037
 EdLn046:
-        CMP EAX, 0Dh            ;CR?
-        JNE EdLn05              ;No - Next test
-        JMP EdLn07
-EdLn05: CMP EAX, 1Bh            ;Escape?
-        JNE EdLn06              ;No - Next test
-        JMP EdLn07
+    CMP   EAX,0Dh                       ;CR?
+    JNE   EdLn05                        ;No - Next test
+    JMP   EdLn07
+EdLn05: CMP EAX,1Bh                     ;Escape?
+    JNE   EdLn06                        ;No - Next test
+    JMP   EdLn07
 EdLn06:
-        CMP EAX, 7Eh            ;Is it above text?
-        JA  EdLn07              ;Yes, Exit!
-        CMP EAX, 20h            ;Is it below text??
-        JB  EdLn07              ;Yes, Exit
-        MOV ESI, pEdString      ;It's really a char!
-        MOV ECX, ddSzCrnt
-        MOV BYTE PTR [ESI+ECX], AL
-        MOV ECX, ddSzMax
-        CMP ddSzCrnt, ECX
-        JAE EdLn01
-        INC PosnX
-        INC ddSzCrnt
-        JMP EdLn01
+    CMP   EAX,7Eh                       ;Is it above text?
+    JA    EdLn07                        ;Yes, Exit!
+    CMP   EAX,20h                       ;Is it below text??
+    JB    EdLn07                        ;Yes, Exit
+    MOV   ESI,pEdString                 ;It's really a char!
+    MOV   ECX,ddSzCrnt
+    MOV   BYTE PTR [ESI+ECX],AL
+    MOV   ECX,ddSzMax
+    CMP   ddSzCrnt,ECX
+    JAE   EdLn01
+    INC   PosnX
+    INC   ddSzCrnt
+    JMP   EdLn01
 EdLn07:
-        MOV ESI,pExitKeyRet
-        MOV [ESI], AL
-        MOV ESI,pddSzRet
-        MOV EAX, ddSzCrnt
-        MOV [ESI], EAX
+    MOV   ESI,pExitKeyRet
+    MOV   [ESI],AL
+    MOV   ESI,pddSzRet
+    MOV   EAX,ddSzCrnt
+    MOV   [ESI],EAX
 
-        PUSH EditX              ;Display current string w/Norm Attrs
-        PUSH EditY
-        PUSH pEdString
-        PUSH ddSzMax
-        CALL GetpCrntJCB        ;Leaves ptr to current JCB in EAX
-        MOV EBX, [EAX+NormAttr]
-        PUSH EBX                ;Normal Attribute from JCB
-        CALL FWORD PTR _PutVidChars ;Ignore error (we are leaving anyway)
-        XOR EAX, EAX
-        JMP EditDone
+    PUSH  EditX                         ;Display current string w/Norm Attrs
+    PUSH  EditY
+    PUSH  pEdString
+    PUSH  ddSzMax
+    CALL  GetpCrntJCB                   ;Leaves ptr to current JCB in EAX
+    MOV   EBX,[EAX+NormAttr]
+    PUSH  EBX                           ;Normal Attribute from JCB
+    CALL  FWORD PTR _PutVidChars        ;Ignore error (we are leaving anyway)
+    XOR   EAX,EAX
+    JMP   EditDone
 BadEdit:
-        MOV EAX, ErcEditParam
+    MOV   EAX,ErcEditParam
 EditDone:
-        MOV ESP,EBP             ;
-        POP EBP                 ;
-        RETF 24
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  24
 
 ;===================== END OF MODULE ================

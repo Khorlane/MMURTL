@@ -19,95 +19,95 @@
 ;
 ; INPUT  - EAX = Pointer to the Service Name (8 bytes long)
 ; OUTPUT - EAX = result code
-;  		   ESI = exchange
+;        ESI = exchange
 ; USED   - EAX, EBX, ESI, EDX, EFlags
 ;
 ;=============================================================================
 
 PUBLIC GetExchange:
-		MOV EDX,[EAX]			; First DWORD of the SvcName in EDX
-		MOV EBX,[EAX+4]			; Second DWORD of the SvcName in EBX
-		MOV ESI,OFFSET rgSVC	; Get the address of rgSVC
-		MOV ECX,nSVC			; Get the number of Service Descriptors
+    MOV   EDX,[EAX]                     ; First DWORD of the SvcName in EDX
+    MOV   EBX,[EAX+4]                   ; Second DWORD of the SvcName in EBX
+    MOV   ESI,OFFSET rgSVC              ; Get the address of rgSVC
+    MOV   ECX,nSVC                      ; Get the number of Service Descriptors
 GE0000:
-		CMP EDX, [ESI]			; Compare first 4 bytes
-		JNE SHORT GE0001		; Not equal.. JUMP
-		CMP EBX, [ESI+4]		; Compare first 4 bytes
-		JNE SHORT GE0001		; Not equal.. JUMP
-		MOV ESI,[ESI+8]			; Get the Exchange in ESI
-		MOV EAX,ercOk			; Set EAX to ercOk
-		RETN					; return
+    CMP   EDX,[ESI]                     ; Compare first 4 bytes
+    JNE   SHORT GE0001                  ; Not equal.. JUMP
+    CMP   EBX,[ESI+4]                   ; Compare first 4 bytes
+    JNE   SHORT GE0001                  ; Not equal.. JUMP
+    MOV   ESI,[ESI+8]                   ; Get the Exchange in ESI
+    MOV   EAX,ercOk                     ; Set EAX to ercOk
+    RETN                                ; return
 GE0001:
-		ADD ESI,sSVC			; Move Dest Ptr to Next rgSvc Element
-		LOOP GE0000				; Loop until ECX = 0
-		MOV EAX,ErcNoSuchSvc	; set result code
-		RETN					; Get out
+    ADD   ESI,sSVC                      ; Move Dest Ptr to Next rgSvc Element
+    LOOP  GE0000                        ; Loop until ECX = 0
+    MOV   EAX,ErcNoSuchSvc              ; set result code
+    RETN                                ; Get out
 
 ;=============================================================================
 
 FindEmptySVC:
 ;
-; INPUT : NONE
-; OUTPUT : EAX,ESI
+; INPUT :     NONE
+; OUTPUT :    EAX,ESI
 ; REGISTERS : ECX
-; MODIFIES : NOTHING
+; MODIFIES :  NOTHING
 ;
 ; Searches the list of Service Descriptors and returns a ptr to an empty
 ; Service Descriptor in ESI with ercOk in EAX.
 ; If an empty Svc Desc in not found, an Error is returned in EAX
 ; and ESI is undefined. Used by RegisterSvc (below)
 ;
-		MOV ESI, OFFSET rgSVC   ; Get address of the Service Descriptor Array
-		MOV ECX,nSVC            ; Get number of Service Descriptors
-		CLI
+    MOV   ESI,OFFSET rgSVC              ; Get address of the Service Descriptor Array
+    MOV   ECX,nSVC                      ; Get number of Service Descriptors
+    CLI
 FELOOP:
-        CMP DWORD PTR [ESI],0   ; Is the lower dword empty?
-		JNE SHORT FENEXT        ; NO
-		CMP DWORD PTR [ESI+4],0 ; Is the upper dword empty?
-		JNE SHORT FENEXT        ; NO
-		XOR EAX,EAX             ; No Error
-		STI
-		RETN                    ;
+    CMP   DWORD PTR [ESI],0             ; Is the lower dword empty?
+    JNE   SHORT FENEXT                  ; NO
+    CMP   DWORD PTR [ESI+4],0           ; Is the upper dword empty?
+    JNE   SHORT FENEXT                  ; NO
+    XOR   EAX,EAX                       ; No Error
+    STI
+    RETN                                ;
 FENEXT:
-        ADD ESI,sSVC            ;
-		LOOP FELOOP             ;
-		MOV EAX,ErcOutOfSvcDesc ;
+    ADD   ESI,sSVC                      ;
+    LOOP  FELOOP                        ;
+    MOV   EAX,ErcOutOfSvcDesc           ;
 FEEXIT:
-        STI
-		RETN
+    STI
+    RETN
 
 ;==============================
 
 FindMatchSVC:
 ;
-; INPUT : EDX:EBX  contains name of service to search for
-; OUTPUT : EAX,ESI
+; INPUT :     EDX:EBX  contains name of service to search for
+; OUTPUT :    EAX,ESI
 ; REGISTERS : ECX
-; MODIFIES : NOTHING
+; MODIFIES :  NOTHING
 ;
 ; Searches the list of Service Descriptors and returns a ptr to the match
 ; in ESI with ercOk in EAX.
 ; If not found an Error is returned in EAX and ESI is undefined.
 ; Used by RegisterSvc (below)
 ;
-		MOV ESI, OFFSET rgSVC       ; Get address of the Service Desc Array
-		MOV ECX,nSVC                ; Get number of Service Descriptors
-		CLI
+    MOV   ESI,OFFSET rgSVC              ; Get address of the Service Desc Array
+    MOV   ECX,nSVC                      ; Get number of Service Descriptors
+    CLI
 FMLOOP:
-        CMP [ESI],EDX    			; lower dword match?
-		JNE SHORT FMNEXT            ; NO
-		CMP [ESI+4],EBX       		; upper dword match?
-		JNE SHORT FMNEXT            ; NO
-		XOR EAX,EAX                 ; No Error
-		STI
-		RETN                        ;
+    CMP   [ESI],EDX                     ; lower dword match?
+    JNE   SHORT FMNEXT                  ; NO
+    CMP   [ESI+4],EBX                   ; upper dword match?
+    JNE   SHORT FMNEXT                  ; NO
+    XOR   EAX,EAX                       ; No Error
+    STI
+    RETN                                ;
 FMNEXT:
-        ADD ESI,sSVC                ;
-		LOOP FMLOOP                 ;
-		MOV EAX, ErcNoSuchSvc       ;
+    ADD   ESI,sSVC                      ;
+    LOOP  FMLOOP                        ;
+    MOV   EAX,ErcNoSuchSvc              ;
 FMEXIT:
-        STI
-		RETN
+    STI
+    RETN
 
 ;=============================================================================
 ;
@@ -134,32 +134,32 @@ pSVCName       EQU [EBP+16]
 SVCExchange    EQU [EBP+12]
 
 PUBLIC __RegisterSvc:
-		PUSH EBP                ;
-		MOV EBP,ESP             ;
-		MOV EAX,pSVCName        ; in EAX
-		MOV EDX,[EAX]        	; Get the Name into EDX:EBX for Find call
-		MOV EBX,[EAX+4]      	;
-		CALL FindMatchSVC       ; Is it already there? (if so, overwrite)
-		CMP EAX,ercOk           ; ercOk if it is
-		JNE SHORT RSNew         ; No, go get an empty one
-		JMP SHORT RSFill        ; Yes, Overwrite it
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    MOV   EAX,pSVCName                  ; in EAX
+    MOV   EDX,[EAX]                     ; Get the Name into EDX:EBX for Find call
+    MOV   EBX,[EAX+4]                   ;
+    CALL  FindMatchSVC                  ; Is it already there? (if so, overwrite)
+    CMP   EAX,ercOk                     ; ercOk if it is
+    JNE   SHORT RSNew                   ; No, go get an empty one
+    JMP   SHORT RSFill                  ; Yes, Overwrite it
 RSNew:
-        CALL FindEmptySVC       ;
-		CMP EAX,ercOk           ;
-		JNE SHORT RSDone        ;
+    CALL  FindEmptySVC                  ;
+    CMP   EAX,ercOk                     ;
+    JNE   SHORT RSDone                  ;
 RSFill:
-		MOV EAX,pSVCName        ; pSVCName in EAX
-		MOV EDX, [EAX]			; Low DWORD of name into EDX
-		MOV [ESI], EDX        	; Now into Svc Descriptor
-		MOV EBX,[EAX+4]      	; Low DWORD of name into EBX
-		MOV [ESI+4], EBX       	; Now into Svc Descriptor
-        MOV ECX,SVCExchange     ;
-		MOV [ESI+SvcExch],ECX   ;
-		XOR EAX,EAX             ;
+    MOV   EAX,pSVCName                  ; pSVCName in EAX
+    MOV   EDX,[EAX]                     ; Low DWORD of name into EDX
+    MOV   [ESI],EDX                     ; Now into Svc Descriptor
+    MOV   EBX,[EAX+4]                   ; Low DWORD of name into EBX
+    MOV   [ESI+4],EBX                   ; Now into Svc Descriptor
+    MOV   ECX,SVCExchange               ;
+    MOV   [ESI+SvcExch],ECX             ;
+    XOR   EAX,EAX                       ;
 RSDone:
-		MOV ESP,EBP             ;
-		POP EBP                 ;
-		RETF 8 					;
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  8                             ;
 
 ;=============================================================================
 ;
@@ -182,22 +182,22 @@ RSDone:
 pOldSVCName       EQU [EBP+12]
 
 PUBLIC __UnRegisterSvc:
-		PUSH EBP                ;
-		MOV EBP,ESP             ;
-		MOV EAX,pOldSVCName     ; in EAX
-		MOV EDX,[EAX]        	; Get the Name into EDX:EBX for Find call
-		MOV EBX,[EAX+4]      	;
-		CALL FindMatchSVC       ; Is it already there? (if so, overwrite)
-		OR EAX, EAX				; ErcOK?
-		JZ  SHORT URSKill       ; Found it, go kill it
-		JMP SHORT URSDone       ; ErcNoSuchSvc already in EAX
+    PUSH  EBP                           ;
+    MOV   EBP,ESP                       ;
+    MOV   EAX,pOldSVCName               ; in EAX
+    MOV   EDX,[EAX]                     ; Get the Name into EDX:EBX for Find call
+    MOV   EBX,[EAX+4]                   ;
+    CALL  FindMatchSVC                  ; Is it already there? (if so, overwrite)
+    OR    EAX,EAX                       ; ErcOK?
+    JZ    SHORT URSKill                 ; Found it, go kill it
+    JMP   SHORT URSDone                 ; ErcNoSuchSvc already in EAX
 URSKill:
-		XOR EAX, EAX			; Low DWORD of name into EDX
-		MOV [ESI], EAX        	; Now into Svc Descriptor
-		MOV [ESI+4], EAX       	; (EAX already zero for ErcOK)
+    XOR   EAX,EAX                       ; Low DWORD of name into EDX
+    MOV   [ESI],EAX                     ; Now into Svc Descriptor
+    MOV   [ESI+4],EAX                   ; (EAX already zero for ErcOK)
 URSDone:
-		MOV ESP,EBP             ;
-		POP EBP                 ;
-		RETF 4 					;
+    MOV   ESP,EBP                       ;
+    POP   EBP                           ;
+    RETF  4                             ;
 
 ;=========== End of Module ===================
