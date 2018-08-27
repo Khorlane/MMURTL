@@ -1,0 +1,17 @@
+*.[eE][xX][eE]
+*.[cC][oO][mM]
+*.[lL][iI][sS]
+*.[lL][sS][tT]
+*.[rR][uU][nN]
+*.[iI][mM][gG]
+*.[oO][bB][jJ]
+*.[tT][xX][tT]
+FLOPPY.ASM
+FSYS.ASM
+HARDIDE.ASM
+JOBC.ASM
+PARALLEL.ASM
+RS232.ASM
+UASM.ASM
+/TC
+/TASM
