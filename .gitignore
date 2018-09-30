@@ -1,10 +1,13 @@
+*.[bB][iI][nN]
 *.[eE][xX][eE]
 *.[cC][oO][mM]
-*.[lL][iI][sS]
-*.[lL][sS][tT]
-*.[rR][uU][nN]
 *.[iI][mM][gG]
+*.[lL][iI][sS]
+*.[lL][nN][kK]
+*.[lL][sS][tT]
+*.[mM][aA][pP]
 *.[oO][bB][jJ]
+*.[rR][uU][nN]
 *.[tT][xX][tT]
 FLOPPY.ASM
 FSYS.ASM
@@ -14,6 +17,7 @@ MONITOR.ASM
 PARALLEL.ASM
 RS232.ASM
 UASM.ASM
+/LEARNASM
 /TC
 /TASM
 
