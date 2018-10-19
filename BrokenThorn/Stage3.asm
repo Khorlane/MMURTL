@@ -318,7 +318,7 @@ GotoXY:
 ; end of %include "stdio.inc"                    ; basic i/o routines
 ;------------------------------------------------------------------------------------------------------------------------------------------
 
-msg db  0x0A, 0x0A, "                     - OS Development Series v3 -"
+msg db  0x0A, 0x0A, "                     - OS Development Series v4 -"
     db  0x0A, 0x0A, "                     MYOS 32 Bit Kernel Executing", 0x0A, 0
 
 Stage3:

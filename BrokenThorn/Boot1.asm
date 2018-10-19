@@ -160,6 +160,8 @@ main:
     ;----------------------------------------------------
     mov   si,msgLoading
     call  Print                         ; (Routine is local)
+    mov   ah,0x00
+    int   0x16                          ; await keypress
 
     ;----------------------------------------------------
     ; Load root directory table
@@ -283,7 +285,7 @@ LOAD_IMAGE:
     datasector  dw 0x0000
     cluster     dw 0x0000
     ImageName   db "KRNLDR  SYS"
-    msgLoading  db 0x0D, 0x0A, "Loading Boot Image v1 ", 0x00
+    msgLoading  db 0x0D, 0x0A, "Loading Boot Image v4 ", 0x00
     msgCRLF     db 0x0D, 0x0A, 0x00
     msgProgress db ".", 0x00
     msgFailure  db 0x0D, 0x0A, "MISSING OR CURRUPT KRNLDR. Press Any Key to Reboot", 0x0D, 0x0A, 0x00

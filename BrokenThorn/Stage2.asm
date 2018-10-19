@@ -904,7 +904,7 @@ ImageSize     db 0                      ; Stage2.asm(94,143)
 ; Data Section
 ;*******************************************************
 
-LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v3...", 0x00
+LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v4...", 0x00
 msgFailure db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT KRNL.SYS. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
 
 ;*******************************************************
@@ -948,6 +948,8 @@ main:
 
     mov si, LoadingMsg
     call  Puts16                        ; (Routine is in Stdio.inc)
+    mov   ah,0x00
+    int   0x16                          ; await keypress
 
     ;-------------------------------;
     ; Initialize filesystem   ;
