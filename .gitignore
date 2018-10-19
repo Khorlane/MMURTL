@@ -1,6 +1,6 @@
 *.[bB][iI][nN]
-*.[eE][xX][eE]
 *.[cC][oO][mM]
+*.[eE][xX][eE]
 *.[iI][mM][gG]
 *.[lL][iI][sS]
 *.[lL][nN][kK]
@@ -8,7 +8,9 @@
 *.[mM][aA][pP]
 *.[oO][bB][jJ]
 *.[rR][uU][nN]
+*.[sS][yY][sS]
 *.[tT][xX][tT]
+*.[zZ][iI][pP]
 FLOPPY.ASM
 FSYS.ASM
 HARDIDE.ASM

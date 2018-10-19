@@ -1,3 +1,6 @@
+;-----------------------------
+;- Assemble using TASM/TLINK -
+;-----------------------------
 .386P
 
 CSEG      SEGMENT WORD 'Code' USE16
