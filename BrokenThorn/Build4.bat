@@ -1,3 +1,3 @@
-copy KRNLDR.SYS A:
-copy KRNL.SYS   A:
+copy Stage2.bin A:
+copy Stage3.bin A:
 pause

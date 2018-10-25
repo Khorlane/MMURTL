@@ -6,7 +6,7 @@
 ; Operating Systems Development Tutorial
 ; http://www.brokenthorn.com/Resources/OSDevIndex.html
 ;
-; nasm -f bin Stage2.asm -o KRNLDR.SYS
+; nasm -f bin Stage2.asm -o Stage2.bin
 ;**********************************************************
 
 [bits 16]
@@ -889,7 +889,7 @@ LoadFile:                               ; Stage2.asm (93)
 %define IMAGE_RMODE_BASE 0x3000         ; Stage2.asm(91,149)
 
 ; kernel name (Must be 11 bytes)
-ImageName     db "KRNL    SYS"          ; Stage2.asm(92)
+ImageName     db "STAGE3  BIN"          ; Stage2.asm(92)
 
 ; size of kernel image in bytes
 ImageSize     db 0                      ; Stage2.asm(94,143)
@@ -905,7 +905,7 @@ ImageSize     db 0                      ; Stage2.asm(94,143)
 ;*******************************************************
 
 LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v4...", 0x00
-msgFailure db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT KRNL.SYS. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
+msgFailure db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT STAGE3.BIN. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
 
 ;*******************************************************
 ; STAGE 2 ENTRY POINT

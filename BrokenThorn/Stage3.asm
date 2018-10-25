@@ -6,7 +6,7 @@
 ; Operating Systems Development Tutorial
 ; http://www.brokenthorn.com/Resources/OSDevIndex.html
 ;
-; nasm -f bin Stage3.asm -o KRNL.SYS
+; nasm -f bin Stage3.asm -o Stage3.bin
 ;**********************************************************
 
 org 0x100000                            ; Kernel starts at 1 MB
