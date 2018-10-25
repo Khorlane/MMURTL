@@ -1,0 +1,193 @@
+unsigned long AllocExch(long *pdExchRet);
+unsigned long CheckMsg (long dExch, char *pMsgRet);
+unsigned long SendMsg  (long dExch, long dMsgPart1, long dMsgPart2);
+unsigned long WaitMsg  (long dExch, char *pMsgRet);
+
+dExch     is the destination exchange
+dMsgPart1 first  dword in a message
+dMsgPart2 second dword in a message
+pMsgRet   points to an eight-byte (2 dwords) structure where the message will be placed
+pdExchRet points to a dword (32-bit unsigned variable) where the exchange number is returned
+
+
+SendMsg()
+CheckMsg()
+WaitMsg()
+SpawnTask()
+NewTask()
+are five very important kernel primitives
+
+
+Services
+--------
+Name must be unique
+When the service is first installed, it registers its name with the OS Name Registry and
+tells the OS what exchange it will be serving.
+
+Request()
+Respond()
+messaging primitives are designed so you can install a program called a System Service that provides shared processing for all applications on the system.
+
+unsigned long Respond(
+  long dRqHndl,
+  long dStatRet
+);
+
+ dRqHndl        the handle to the request block that the service is responding to.
+ dStatRet       the status or error code returned to the requester.
+
+unsigned long Request(
+  char         *pSvcName,
+  unsigned int  wSvcCode,
+  long          dRespExch,
+  long         *pdRqHndlRet,
+  long          dnpSend
+  char         *pData1SR,
+  long          dcbData1SR,
+  char         *pData2SR,
+  long          dcbData2SR,
+  long          dData0,
+  long          dData1,
+  long          dData2
+);
+
+ pSvcName       Pointer to the service name you are requesting. The service name is eight
+                characters, all capitals, and space-padded on the right.
+
+ wSvcCode       Number of the specific function you are requesting. These are documented
+                independently by each service.
+
+ dRespExch      Exchange that the service will respond to with the results (an exchange you have
+                allocated).
+
+*pdRqHndlRet    Pointer where the OS will return a handle to you used to identify this request
+                when you receive the response at your exchange. This is needed because you can make multiple
+                requests and direct all the responses to the same exchange. If you made more than one request,
+                you’ll need to know which one is responding.
+
+ dnpSend        is the number (0, 1 or 2) of the two data pointers that are moving data from you to the
+                service. The service already knows this, but network transport mechanisms do not. If pSend1
+                was a pointer to some data the service was getting from your memory area, and pSend2 was not
+                used or was pointing to your memory area for the service to fill, dnpSend would be 1. If both
+                data items were being sent to you from the service then this would be 0.
+
+*pData1         Pointer to memory in your address space that the service must access (either to read
+                or write as defined by the service code). For instance, in the file system OpenFile() function,
+                pData1 points to the file name (data being sent to the service). This may even point to a structure
+                or an array depending on how much information is needed for this particular function (service
+                code).
+
+ dcbData1       How many bytes the pDataSend points to. Using the Open File() example, this
+                would be the size (length) of the filename.
+
+*pData2         This is a second pointer exactly like pData1 described above.
+
+ dcbData2       This is the same as dcbData1.
+
+
+
+ dData0         These are three dwords that provide additional information for the service. In many functions
+ dData1         you will not even use pData1, or pData2 to send data to the service, but will simply fill in a value
+ dData2         in one or more of these three dwords. These can never be pointers to data.
+
+-------------
+- Boot Code -
+-------------
+
+\MyOs\mmsource\MSCODE16\BOOTCODE
+BOOTBLOK.ASM
+...
+	LIDT FWORD PTR IDTptr
+	LGDT FWORD PTR GDTptr
+
+	MOV EAX,CR0
+	OR AL,1       ;Set protected mode bit
+	MOV CR0,EAX
+	JMP $+2       ;Clear prefetch queue with JMP
+	NOP
+	NOP
+
+  MOV BX, 10h   ;OS and User Data descriptor in GDT
+	MOV DS,BX
+	MOV ES,BX
+	MOV FS,BX
+	MOV GS,BX
+	MOV SS,BX
+
+	;We define a far jump with 48 bit pointer manually
+
+	DB 66h        prefix to toggle 16/32-bit data operand
+	DB 67h        prefix to toggle 16/32-bit addressing mode
+	DB 0EAh       opeode for JMP inter segment
+	DD 10000h     '1' is the 2nd entry in the GDT ?? (maybe)
+                '0000' is the jump to address,
+                kernel starts at address 0
+	DW 8h         CodeDesc selector
+...
+
+EA 00 01 00 00 00 08
+   -----32---- --16-
+---------------------------
+- Global Descriptor Table -
+---------------------------
+
+\MyOs\mmsource\OSSOURCE
+MOSGDT.ASM
+
+1st entry is always null
+2nd entry is the OS Code Descriptor
+
+Note about the BOOTBLOK code snippet
+------------------------------------
+The 0x66 indicates that the JMP (0xEA) refers to six bytes.
+The default is refering to 64K (16 bits) in real mode or to 32 bits
+in protected mode. Having it increased, it also includes the segment
+descriptor, the index of the segment either in the GDT or the LDT,
+which means, that this code is making what is traditionally called
+a "long jump": a jump that cross beyond segments in the x86 architecture.
+The segment, in this case, points to the second entry on the GDT. If you
+look before in that program, you'll likely see how the GDT is defined in
+terms of the segment starting address and length (look in the Intel manual
+to study the GDT and LDT tables, 32 bit entry describing each segment).
+
+The "selectors" (segment numbers for those coming from real mode programming) are fixed.
+The selector values must be a multiple of eight, and I chose them to reside at the low end of the
+Global Descriptor Table. These will never change in MMURTL as long as they are legal on Intel
+and work-alike processors.
+
+The operating system code segment is 08h.   8
+The user code segment             is 18h.  24
+The common data segment           is 10h.  16
+
+
+
+Far Jumps in Protected Mode.
+When the processor is operating in protected mode, the JMP instruction can be used to perform the
+following three types of far jumps:
+- A far jump to a conforming or non-conforming code segment.
+- A far jump through a call gate.
+- A task switch.
+
+(The JMP instruction cannot be used to perform inter-privilege-level far jumps.)
+
+In protected mode, the processor always uses the segment selector part of the far address to access the
+corresponding descriptor in the GDT or LDT. The descriptor type (code segment, call gate, task gate, or TSS)
+and access rights determine the type of jump to be performed.
+
+If the selected descriptor is for a code segment, a far jump to a code segment at the same privilege level is performed.
+(If the selected code segment is at a different privilege level and the code segment is non-conforming, a
+general-protection exception is generated.) A far jump to the same privilege level in protected mode is very
+similar to one carried out in real-address or virtual-8086 mode. The target operand specifies an absolute far address
+either directly with a pointer (ptr16:16 or ptr16:32) or indirectly with a memory location (m16:16 or m16:32).
+The operand-size attribute determines the size of the offset (16 or 32 bits) in the far address.
+
+The new code segment selector and its descriptor are loaded into CS register, 
+and the offset from the instruction is loaded into the EIP register.
+
+Note that a call gate (described in the next paragraph) can also be used to perform far call to a code segment at the
+same privilege level. Using this mechanism provides an extra level of indirection and is the preferred method of making
+jumps between 16-bit and 32-bit code segments.
+
+
+In Protected Mode, both long pointer forms consult the Access Rights (AR)
+byte in the descriptor indexed by the selector part of the long pointer.

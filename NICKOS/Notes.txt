@@ -1,0 +1,67 @@
+----------
+- GitHub -
+----------
+Add ?w=1 to the URL to see the diff with whitespace ignored.
+
+----------
+- DosBox -
+----------
+To mount a floppy image
+- Use 'ImDisk Virtual Disk Driver' to make the floppy image avaiable
+- In DosBox use this command
+  mount a d:\ -t floppy
+
+To use in full screen mode
+- Alt F10 to capture mouse
+- Alt Enter - full screen
+- Alt Enter - exit full screen
+
+----------------------
+- Find Documentation -
+----------------------
+https://archive.org/details/bitsavers
+Search collection for Borland
+Use filters to narrow the search
+
+"turbo c version 2.0 user's guide"
+
+---------------------------
+- Boot sector programming -
+---------------------------
+Write boot sector onto a floppy
+- Code up MyOsA.asm
+- TASM  MyOsA
+- TLINK MyOsA
+- DEBUG MyOsA.exe
+  -D <Enter>
+  219F:0000 xx xx xx
+  -W 219F:0000 0 0 1 <Enter>
+
+Write a boot sector program to a file
+- Code up MyOsA.asm
+- TASM  MyOsA MyOsA MyOsA
+- Check MyOsA, make sure that the Magic Word is at 01FE 
+- TLINK MyOsA
+- Debug MyOsA.exe <Enter>
+-D <Enter>
+06CC:0000 EB 3E 90 (etc.)
+-N C:\NickOs\MyOsA.bin
+-R BX <Enter>
+BX 0000  : <Enter>
+-R CX <Enter>
+CX 0200  : <Enter>
+-W 06CC:0000
+Writing 200 bytes
+-q
+copy myosa.bin myos.bin
+start bochs
+
+
+
+Using DD
+
+Create a floppy image
+dd bs=512 count=2880 if=/dev/zero of=disk.img
+
+Copy Boot Sector
+dd if=myos.bin of=disk.img conv=notrunc

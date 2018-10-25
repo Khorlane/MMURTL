@@ -24,26 +24,26 @@ start:
 ; If you use a short jump, add a "nop" after it to offset the 3rd byte.
 ; See Wikipedia "Design of the FAT file system" for more info on the BIOS Parameter Block
 
-                                        Hex Offset from beginning of Boot Sector
-bpbOEM                db "My OS   "     0x003  8 bytes padded with spaces
-bpbBytesPerSector:    DW 512            0x00B  2 bytes 
-bpbSectorsPerCluster: DB 1              0x00D  1 byte  
-bpbReservedSectors:   DW 1              0x00E  2 bytes
-bpbNumberOfFATs:      DB 2              0x010  1 bytes
-bpbRootEntries:       DW 224            0x011  2 bytes
-bpbTotalSectors:      DW 2880           0x013  2 bytes
-bpbMedia:             DB 0xf0           0x015  1 byte
-bpbSectorsPerFAT:     DW 9              0x016  2 bytes
-bpbSectorsPerTrack:   DW 18             0x018  2 bytes DOS 3.31 BPB
-bpbHeadsPerCylinder:  DW 2              0x01A  2 bytes DOS 3.31 BPB
-bpbHiddenSectors:     DD 0              0x01C  4 bytes DOS 3.31 BPB
-bpbTotalSectorsBig:   DD 0              0x020  4 bytes DOS 3.31 BPB
-bsDriveNumber:        DB 0              0x024  1 byte  Extended BIOS Parameter Block
-bsUnused:             DB 0              0x025  1 byte  Extended BIOS Parameter Block
-bsExtBootSignature:   DB 0x29           0x026  1 byte  Extended BIOS Parameter Block
-bsSerialNumber:       DD 0xa0a1a2a3     0x027  4 bytes Extended BIOS Parameter Block
-bsVolumeLabel:        DB "MOS FLOPPY "  0x028 11 bytes Extended BIOS Parameter Block
-bsFileSystem:         DB "FAT12   "     0x036  8 bytes Extended BIOS Parameter Block padded with spaces
+                                        ; Hex Offset from beginning of Boot Sector
+bpbOEM                db "My OS   "     ; 0x003  8 bytes padded with spaces
+bpbBytesPerSector:    DW 512            ; 0x00B  2 bytes 
+bpbSectorsPerCluster: DB 1              ; 0x00D  1 byte  
+bpbReservedSectors:   DW 1              ; 0x00E  2 bytes
+bpbNumberOfFATs:      DB 2              ; 0x010  1 bytes
+bpbRootEntries:       DW 224            ; 0x011  2 bytes
+bpbTotalSectors:      DW 2880           ; 0x013  2 bytes
+bpbMedia:             DB 0xf0           ; 0x015  1 byte
+bpbSectorsPerFAT:     DW 9              ; 0x016  2 bytes
+bpbSectorsPerTrack:   DW 18             ; 0x018  2 bytes DOS 3.31 BPB
+bpbHeadsPerCylinder:  DW 2              ; 0x01A  2 bytes DOS 3.31 BPB
+bpbHiddenSectors:     DD 0              ; 0x01C  4 bytes DOS 3.31 BPB
+bpbTotalSectorsBig:   DD 0              ; 0x020  4 bytes DOS 3.31 BPB
+bsDriveNumber:        DB 0              ; 0x024  1 byte  Extended BIOS Parameter Block
+bsUnused:             DB 0              ; 0x025  1 byte  Extended BIOS Parameter Block
+bsExtBootSignature:   DB 0x29           ; 0x026  1 byte  Extended BIOS Parameter Block
+bsSerialNumber:       DD 0xa0a1a2a3     ; 0x027  4 bytes Extended BIOS Parameter Block
+bsVolumeLabel:        DB "MOS FLOPPY "  ; 0x028 11 bytes Extended BIOS Parameter Block
+bsFileSystem:         DB "FAT12   "     ; 0x036  8 bytes Extended BIOS Parameter Block padded with spaces
 
 ;--------------------------------------------------------------------------------------------------
 ; Prints a string
