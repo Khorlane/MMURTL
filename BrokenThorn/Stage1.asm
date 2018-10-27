@@ -15,10 +15,7 @@
 ;**********************************************************
 
 [bits 16]                               ; we are in 16 bit real mode
-
-org   0                                 ; we will set regisers later
-
-Start:
+    ORG   0                             ; we will set regisers later
     JMP   Booter                        ; jump to start of bootloader
 
 ;--------------------------------------------------------------------------------------------------
@@ -35,28 +32,28 @@ Start:
 
                                         ; Hex Offset from beginning of Boot Sector
 OEM                   DB "My OS   "     ; 0x003  8 bytes padded with spaces
-BytesPerSector:       DW 512            ; 0x00B  2 bytes
-SectorsPerCluster:    DB 1              ; 0x00D  1 byte
-ReservedSectors:      DW 1              ; 0x00E  2 bytes
-NumberOfFATs:         DB 2              ; 0x010  1 bytes
-RootEntries:          DW 224            ; 0x011  2 bytes
-TotalSectors:         DW 2880           ; 0x013  2 bytes
-Media:                DB 0xf0           ; 0x015  1 byte
-SectorsPerFAT:        DW 9              ; 0x016  2 bytes
-SectorsPerTrack:      DW 18             ; 0x018  2 bytes DOS 3.31 BPB
-HeadsPerCylinder:     DW 2              ; 0x01A  2 bytes DOS 3.31 BPB
-HiddenSectors:        DD 0              ; 0x01C  4 bytes DOS 3.31 BPB
-TotalSectorsBig:      DD 0              ; 0x020  4 bytes DOS 3.31 BPB
-DriveNumber:          DB 0              ; 0x024  1 byte  Extended BIOS Parameter Block
-Unused:               DB 0              ; 0x025  1 byte  Extended BIOS Parameter Block
-ExtBootSignature:     DB 0x29           ; 0x026  1 byte  Extended BIOS Parameter Block
-SerialNumber:         DD 0xa0a1a2a3     ; 0x027  4 bytes Extended BIOS Parameter Block
-VolumeLabel:          DB "MOS FLOPPY "  ; 0x028 11 bytes Extended BIOS Parameter Block
-FileSystem:           DB "FAT12   "     ; 0x036  8 bytes Extended BIOS Parameter Block padded with spaces
+BytesPerSector        DW 512            ; 0x00B  2 bytes
+SectorsPerCluster     DB 1              ; 0x00D  1 byte
+ReservedSectors       DW 1              ; 0x00E  2 bytes
+NumberOfFATs          DB 2              ; 0x010  1 bytes
+RootEntries           DW 224            ; 0x011  2 bytes
+TotalSectors          DW 2880           ; 0x013  2 bytes
+Media                 DB 0xf0           ; 0x015  1 byte
+SectorsPerFAT         DW 9              ; 0x016  2 bytes
+SectorsPerTrack       DW 18             ; 0x018  2 bytes DOS 3.31 BPB
+HeadsPerCylinder      DW 2              ; 0x01A  2 bytes DOS 3.31 BPB
+HiddenSectors         DD 0              ; 0x01C  4 bytes DOS 3.31 BPB
+TotalSectorsBig       DD 0              ; 0x020  4 bytes DOS 3.31 BPB
+DriveNumber           DB 0              ; 0x024  1 byte  Extended BIOS Parameter Block
+Unused                DB 0              ; 0x025  1 byte  Extended BIOS Parameter Block
+ExtBootSignature      DB 0x29           ; 0x026  1 byte  Extended BIOS Parameter Block
+SerialNumber          DD 0xa0a1a2a3     ; 0x027  4 bytes Extended BIOS Parameter Block
+VolumeLabel           DB "MYOS FLOPPY"  ; 0x028 11 bytes Extended BIOS Parameter Block
+FileSystem            DB "FAT12   "     ; 0x036  8 bytes Extended BIOS Parameter Block padded with spaces
 
 ;--------------------------------------------------------------------------------------------------
 ; Prints a string
-; DS=>SI: 0 terminated string
+; DS => SI: 0 terminated string
 ;--------------------------------------------------------------------------------------------------
 Print:
     LODSB                               ; Load byte at address DS:(E)SI into AL
@@ -70,7 +67,8 @@ Print:
 
 ;--------------------------------------------------------------------------------------------------
 ; Convert CHS to LBA
-; LBA = (cluster - 2) * sectors per cluster
+; Given: AX = Cluster to be read
+; LBA = (Cluster - 2) * sectors per cluster
 ;--------------------------------------------------------------------------------------------------
 ClusterLBA:
     SUB   AX,0x0002                     ; zero base cluster number
@@ -84,9 +82,9 @@ ClusterLBA:
 ; Convert LBA to CHS
 ; AX => LBA Address to convert
 ;
-; absolute sector = (logical sector / sectors per track) + 1
-; absolute head   = (logical sector / sectors per track) MOD number of heads
-; absolute track  = logical sector / (sectors per track * number of heads)
+; absolute sector = (logical sector /  sectors per track) + 1
+; absolute head   = (logical sector /  sectors per track) MOD number of heads
+; absolute track  =  logical sector / (sectors per track * number of heads)
 ;--------------------------------------------------------------------------------------------------
 LBACHS:
     XOR   DX,DX                         ; prepare dx:ax for operation
@@ -216,7 +214,7 @@ FindFat:
 LoadFat:
     ; save starting cluster of boot image
     MOV   DX,WORD [DI + 0x001A]
-    MOV   WORD [Cluster],dx             ; file's first cluster
+    MOV   WORD [Cluster],DX             ; file's first cluster
 
     ; compute size of FAT and store in "cx"
     XOR   AX,AX
@@ -231,11 +229,11 @@ LoadFat:
     MOV   BX,0x0200                     ; copy FAT above bootcode
     CALL  ReadSector                    ;
 
-    ; read image file into memory (0050:0000)
-    MOV   AX,0x0050
-    MOV   ES,AX                         ; destination for image
-    MOV   BX,0x0000                     ; destination for image
-    PUSH  BX
+    ; read Stage2 file into memory (0050:0000)
+    MOV   AX,0x0050                     ; set segment register
+    MOV   ES,AX                         ;  to 50h
+    MOV   BX,0x0000                     ; push our starting address (0h)
+    PUSH  BX                            ;  onto the stack
 
 ;--------------------------------------------------------------------------------------------------
 ; Load Stage 2
@@ -270,14 +268,14 @@ LoadStage2OddCluster:
 
 LoadStage2Done:
     MOV   WORD [Cluster],DX             ; store new cluster
-    CMP   DX,0x0FF0                     ; test for end of file
-    JB    LoadStage2
+    CMP   DX,0x0FF0                     ; If DX is less than EOF (0x0FF0)
+    JB    LoadStage2                    ;   then keep going (JB = Jump Below)
 
     MOV   SI,NewLineMsg
     CALL  Print                         ;
-    PUSH  WORD 0x0050
-    PUSH  WORD 0x0000
-    RETF
+    PUSH  WORD 0x0050                   ; Jump to our Stage2 code that we put at 0050:0000
+    PUSH  WORD 0x0000                   ;   by using a Far Return which pops IP(0h) then CS(50h)
+    RETF                                ;   and poof, we're executing our Stage2 code!
 
 ;--------------------------------------------------------------------------------------------------
 ; Failed to find FAT (File Allocation Table)
