@@ -71,36 +71,36 @@ Print:
 ; LBA = (Cluster - 2) * sectors per cluster
 ;--------------------------------------------------------------------------------------------------
 ClusterLBA:
-    SUB   AX,0x0002                     ; zero base cluster number
-    XOR   CX,CX
-    MOV   CL,BYTE [SectorsPerCluster]   ; convert byte to word
-    MUL   CX
-    ADD   AX,WORD [DataSector]          ; base data sector
+    SUB   AX,0x0002                     ; Adjust cluster to be zero based
+    XOR   CX,CX                         ; CX =
+    MOV   CL,BYTE [SectorsPerCluster]   ;  SectorsPerCluster
+    MUL   CX                            ; AX = AX * CX
+    ADD   AX,WORD [DataSector]          ; AX = AX + Data Sector
     RET
 
 ;--------------------------------------------------------------------------------------------------
 ; Convert LBA to CHS
 ; AX => LBA Address to convert
 ;
-; absolute sector = (logical sector /  sectors per track) + 1
-; absolute head   = (logical sector /  sectors per track) MOD number of heads
-; absolute track  =  logical sector / (sectors per track * number of heads)
+; absolute sector = (LBA %  sectors per track) + 1
+; absolute head   = (LBA /  sectors per track) MOD number of heads
+; absolute track  =  LBA / (sectors per track * number of heads)
 ;--------------------------------------------------------------------------------------------------
 LBACHS:
-    XOR   DX,DX                         ; prepare dx:ax for operation
-    DIV   WORD [SectorsPerTrack]        ; calculate
-    INC   DL                            ; adjust for sector 0
-    MOV   BYTE [AbsoluteSector],DL
-    XOR   DX,DX                         ; prepare dx:ax for operation
-    DIV   WORD [HeadsPerCylinder]       ; calculate
-    MOV   BYTE [AbsoluteHead],DL
-    MOV   BYTE [AbsoluteTrack],AL
+    XOR   DX,DX                         ; DL = Remainder of
+    DIV   WORD [SectorsPerTrack]        ;  AX \ SectorsPerTrack
+    INC   DL                            ;   Plus 1
+    MOV   BYTE [AbsoluteSector],DL      ;    Save DL 
+    XOR   DX,DX                         ; DL = Remainder of
+    DIV   WORD [HeadsPerCylinder]       ;  AX \ HeadsPerCylinder
+    MOV   BYTE [AbsoluteHead],DL        ;   Save DL
+    MOV   BYTE [AbsoluteTrack],AL       ; Save AL (what's left after the above dividing)
     RET
 
 ;--------------------------------------------------------------------------------------------------
 ; Reads a series of sectors
 ; CX    => Number of sectors to read
-; AX    => STARTing sector
+; AX    => Starting sector
 ; ES:BX => Buffer to read to
 ;--------------------------------------------------------------------------------------------------
 ReadSector:
@@ -181,7 +181,7 @@ Booter:
     ; compute location of root directory and store in "ax"
     MOV   AL,BYTE [NumberOfFATs]        ; number of FATs
     MUL   WORD [SectorsPerFAT]          ; sectors used by FATs
-    ADD   ax,WORD [ReservedSectors]     ; adjust for bootsector
+    ADD   AX,WORD [ReservedSectors]     ; adjust for bootsector
     MOV   WORD [DataSector],AX          ; base of root directory
     ADD   WORD [DataSector],CX
 
