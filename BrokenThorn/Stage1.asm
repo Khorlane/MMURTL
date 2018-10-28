@@ -24,9 +24,10 @@
 ;   and yes, these are the required fields
 ;   and yes, they must be in this order
 ;   you can change the names (obviously)
+; Tutorial 5: Bootloaders 3
 ;--------------------------------------------------------------------------------------------------
 
-; BPB Begins 3 bytes from start. We do a far jump, which is 3 bytes in size.
+; The BIOS Parameter Block begins 3 bytes from start. We do a far jump, which is 3 bytes in size.
 ; If you use a short jump, add a "nop" after it to offset the 3rd byte.
 ; See Wikipedia "Design of the FAT file system" for more info on the BIOS Parameter Block
 
@@ -56,12 +57,13 @@ FileSystem            DB "FAT12   "     ; 0x036  8 bytes Extended BIOS Parameter
 ; DS => SI: 0 terminated string
 ;--------------------------------------------------------------------------------------------------
 Print:
+    MOV   AH,0Eh                        ; set function code 0E (BIOS INT 10h - Teletype output) 
+PrintLoop:
     LODSB                               ; Load byte at address DS:(E)SI into AL
-    OR    AL,AL                         ; Does AL=0?
-    JZ    PrintDone                     ; Yep, null terminator found-bail out
-    MOV   AH,0Eh                        ; Nope-Print the character
-    INT   10h
-    JMP   Print                         ; Repeat until null terminator found
+    OR    AL,AL                         ; If AL = 0
+    JZ    PrintDone                     ;   then we're done
+    INT   10h                           ; Put character on the screen using bios interrupt 10
+    JMP   PrintLoop                     ; Repeat until null terminator found
   PrintDone:
     RET                                 ; we are done, so return
 
@@ -69,6 +71,7 @@ Print:
 ; Convert CHS to LBA
 ; Given: AX = Cluster to be read
 ; LBA = (Cluster - 2) * sectors per cluster
+; Tutorial 6: Bootloaders 4
 ;--------------------------------------------------------------------------------------------------
 ClusterLBA:
     SUB   AX,0x0002                     ; Adjust cluster to be zero based
@@ -81,10 +84,10 @@ ClusterLBA:
 ;--------------------------------------------------------------------------------------------------
 ; Convert LBA to CHS
 ; AX => LBA Address to convert
-;
 ; absolute sector = (LBA %  sectors per track) + 1
 ; absolute head   = (LBA /  sectors per track) MOD number of heads
 ; absolute track  =  LBA / (sectors per track * number of heads)
+; Tutorial 6: Bootloaders 4
 ;--------------------------------------------------------------------------------------------------
 LBACHS:
     XOR   DX,DX                         ; DL = Remainder of
@@ -102,6 +105,7 @@ LBACHS:
 ; CX    => Number of sectors to read
 ; AX    => Starting sector
 ; ES:BX => Buffer to read to
+; Tutorial 5: Bootloaders 3
 ;--------------------------------------------------------------------------------------------------
 ReadSector:
     MOV   DI,0x0005                     ; five retries for error
@@ -163,13 +167,14 @@ Booter:
     ;- Display loading message -
     ;---------------------------
     MOV   SI,LoadingMsg                 ; si points to first byte in msgLoading
-    CALL  Print                         ; Print message
+    CALL  Print                         ; print message
     MOV   AH,0X00                       ; wait
     INT   0x16                          ;  for keypress
 
-    ;-----------------------------
-    ;- Load root directory table -
-    ;-----------------------------
+    ;--------------------------
+    ; Load root directory table 
+    ; Tutorial 6: Bootloaders 4  
+    ;--------------------------
     ; compute size of root directory and store in "cx"
     XOR   CX,CX                         ; zero out cx
     XOR   DX,DX                         ; zero out dx
@@ -186,35 +191,36 @@ Booter:
     ADD   WORD [DataSector],CX
 
     ; read root directory into memory (7C00:0200)
-    MOV   BX,0x0200                     ; copy root dir above bootcode
-    CALL  ReadSector                    ;
+    MOV   BX,0x0200                     ; read root dir
+    CALL  ReadSector                    ;  above bootcode
 
-    ;----------------------------------------------------
-    ; Find stage 2
-    ;----------------------------------------------------
-    ; browse root directory for binary image
+    ;-------------------------------
+    ; Find stage 2 in Root Directory
+    ; Tutorial 6: Bootloaders 4
+    ;-------------------------------
     MOV   CX,WORD [RootEntries]         ; load loop counter
     MOV   DI,0x0200                     ; locate first root entry
 FindFat:
-    PUSH  CX
+    PUSH  CX                            ; save loop counter on the stack
     MOV   CX,0x000B                     ; eleven character name
     MOV   SI,Stage2Name                 ; Stage2 file name to find
     PUSH  DI
     REP   CMPSB                         ; test for entry match
     POP   DI
-    JE    LoadFat
-    POP   CX
+    JE    LoadFat                       ; found our file, now load it
+    POP   CX                            ; pop our loop counter
     ADD   DI,0x0020                     ; queue next directory entry
-    LOOP  FindFat
-    JMP   FindFatFailed
+    LOOP  FindFat                       ; keep looking
+    JMP   FindFatFailed                 ; file not found, this is bad!
 
 ;----------------------------------------------------
 ; Load FAT
+; Tutorial 6: Bootloaders 4
 ;----------------------------------------------------
 LoadFat:
     ; save starting cluster of boot image
-    MOV   DX,WORD [DI + 0x001A]
-    MOV   WORD [Cluster],DX             ; file's first cluster
+    MOV   DX,WORD [DI + 0x001A]         ; save file's
+    MOV   WORD [Cluster],DX             ;  first cluster
 
     ; compute size of FAT and store in "cx"
     XOR   AX,AX
@@ -226,26 +232,27 @@ LoadFat:
     MOV   AX,WORD [ReservedSectors]     ; adjust for bootsector
 
     ; read FAT into memory (7C00:0200)
-    MOV   BX,0x0200                     ; copy FAT above bootcode
-    CALL  ReadSector                    ;
+    MOV   BX,0x0200                     ; read FAT
+    CALL  ReadSector                    ;  into memory about our bootcode
 
+;--------------------------------------------------------------------------------------------------
+; Load Stage 2
+; Tutorial 6: Bootloaders 4
+;--------------------------------------------------------------------------------------------------
     ; read Stage2 file into memory (0050:0000)
     MOV   AX,0x0050                     ; set segment register
     MOV   ES,AX                         ;  to 50h
     MOV   BX,0x0000                     ; push our starting address (0h)
     PUSH  BX                            ;  onto the stack
 
-;--------------------------------------------------------------------------------------------------
-; Load Stage 2
-;--------------------------------------------------------------------------------------------------
 LoadStage2:
     MOV   AX,WORD [Cluster]             ; cluster to read
     POP   BX                            ; buffer to read into
     CALL  ClusterLBA                    ; convert cluster to LBA
-    XOR   CX,CX
-    MOV   CL,BYTE [SectorsPerCluster]   ; sectors to read
-    CALL  ReadSector                    ;
-    PUSH  BX
+    XOR   CX,CX                         ; CL =
+    MOV   CL,BYTE [SectorsPerCluster]   ;  sectors to read
+    CALL  ReadSector                    ; read a sector
+    PUSH  BX                            ; push buffer ptr to stack
 
     ; compute next cluster
     MOV   AX,WORD [Cluster]             ; identify current cluster
@@ -271,8 +278,8 @@ LoadStage2Done:
     CMP   DX,0x0FF0                     ; If DX is less than EOF (0x0FF0)
     JB    LoadStage2                    ;   then keep going (JB = Jump Below)
 
-    MOV   SI,NewLineMsg
-    CALL  Print                         ;
+    MOV   SI,NewLineMsg                 ; print
+    CALL  Print                         ;  new line
     PUSH  WORD 0x0050                   ; Jump to our Stage2 code that we put at 0050:0000
     PUSH  WORD 0x0000                   ;   by using a Far Return which pops IP(0h) then CS(50h)
     RETF                                ;   and poof, we're executing our Stage2 code!
@@ -281,10 +288,10 @@ LoadStage2Done:
 ; Failed to find FAT (File Allocation Table)
 ;--------------------------------------------------------------------------------------------------
 FindFatFailed:
-    MOV   SI,FailureMsg
-    CALL  Print                         ;
-    MOV   AH,0x00
-    INT   0x16                          ; await keypress
+    MOV   SI,FailureMsg                 ; print
+    CALL  Print                         ;  failure message
+    MOV   AH,0x00                       ; wait for
+    INT   0x16                          ;  keypress
     INT   0x19                          ; warm boot computer
 
 ;--------------------------------------------------------------------------------------------------
@@ -296,7 +303,7 @@ FindFatFailed:
     Cluster         DW 0x0000
     DataSector      DW 0x0000
     FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2. Press Any Key to Reboot", 0x0D, 0x0A, 0x00
-    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v5 ", 0x00
+    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v6 ", 0x00
     NewLineMsg      DB 0x0D, 0x0A, 0x00
     ProgressMsg     DB ".", 0x00
     Stage2Name      DB "STAGE2  BIN"
@@ -304,5 +311,5 @@ FindFatFailed:
 ;--------------------------------------------------------------------------------------------------
 ; Make it a Boot Sector! (must be exactly 512 bytes)
 ;--------------------------------------------------------------------------------------------------
-    TIMES 510-($-$$) DB 0
+    TIMES 510-($-$$) DB 0               ; make boot sector exactly 512 bytes
     DW 0xAA55                           ; Magic Word that makes this a boot sector
