@@ -6,7 +6,7 @@
 ; Operating Systems Development Tutorial
 ; http://www.brokenthorn.com/Resources/OSDevIndex.html
 ;
-; nasm -f bin Stage2.asm -o Stage2.bin
+; nasm -f bin Stage2.asm -o Stage2.bin -l Stage2.lst
 ;**********************************************************
 
 [bits 16]
@@ -68,7 +68,6 @@ Puts16:
 Puts16Done:
     popa                                ; restore registers
     ret                                 ; we are done, so return
-
 
 ;==========================================================
 ;
@@ -350,7 +349,7 @@ GotoXY:
 ; Install our GDT
 ;*******************************************
 
-InstallGDT:                             ; Stage2.asm (65)
+InstallGDT:                             ; <------------------------------------------------------->
     cli                                 ; clear interrupts
     pusha                               ; save registers
     lgdt  [toc]                         ; load GDT into GDTR
@@ -389,9 +388,9 @@ toc:
 
 ; give the descriptor offsets names
 
-%define NULL_DESC 0                     ; Not used anywhere!!!
-%define CODE_DESC 0x8                   ; Stage2.asm (115,158)
-%define DATA_DESC 0x10                  ; Stage2.asm (132)
+%define NULL_DESC 0
+%define CODE_DESC 0x8
+%define DATA_DESC 0x10
 
 %endif ;__GDT_INC_67343546FDCC56AAB872_INCLUDED__
 
@@ -420,57 +419,46 @@ toc:
 
 [bits 16]
 
-;----------------------------------------------
-; Enables a20 line through keyboard controller
-;----------------------------------------------
-EnableA20_KKbrd:                        ; NEVER CALLED!!!
-    cli
-    push  ax
-    mov   al,0xdd                       ; send enable a20 address line command to controller
-    out   0x64,al
-    pop   ax
-    ret
-
 ;--------------------------------------------
 ; Enables a20 line through output port
 ;--------------------------------------------
-EnableA20_KKbrd_Out:                    ; Stage2.asm"(71)
-    cli
+EnableA20_KKbrd_Out:
+    cli                                 ; disable interrupts
     pusha
   
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ; wait for keypress
     mov   al,0xAD
     out   0x64,al                       ; disable keyboard
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ;
 
     mov   al,0xD0
     out   0x64,al                       ; tell controller to read output port
-    call  wait_output                   ; (Routine is local)
+    call  wait_output                   ;
 
     in    al,0x60
     push  eax                           ; get output port data and store it
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ;
 
     mov   al,0xD1
     out   0x64,al                       ; tell controller to write output port
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ;
 
     pop   eax
     or    al,2                          ; set bit 1 (enable a20)
     out   0x60,al                       ; write out data back to the output port
 
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ;
     mov   al,0xAE                       ; enable keyboard
     out   0x64,al
 
-    call  wait_input                    ; (Routine is local)
+    call  wait_input                    ; wait for keypress
     popa
-    sti
+    sti                                 ; enable interrupts
     ret
 
 ; wait for input buffer to be clear
 
-wait_input:                             ; called only in this module
+wait_input:
     in    al,0x64
     test  al,2
     jnz   wait_input
@@ -478,30 +466,10 @@ wait_input:                             ; called only in this module
 
 ; wait for output buffer to be clear
 
-wait_output:                            ; called only in this module
+wait_output:
     in    al,0x64
     test  al,1
     jz    wait_output
-    ret
-
-;--------------------------------------
-; Enables a20 line through bios
-;--------------------------------------
-EnableA20_Bios:                         ; NEVER CALLED!!!
-    pusha
-    mov   ax,0x2401
-    int   0x15
-    popa
-    ret
-
-;-------------------------------------------------
-; Enables a20 line through system control port A
-;-------------------------------------------------
-EnableA20_SysControlA:                  ; NEVER CALLED!!!
-    push  ax
-    mov   al,2
-    out   0x92,al
-    pop   ax
     ret
 
 %endif
@@ -551,43 +519,43 @@ EnableA20_SysControlA:                  ; NEVER CALLED!!!
 
 [bits 16]
 
-bpbOEM                db "My OS   "
-bpbBytesPerSector:    DW 512
-bpbSectorsPerCluster: DB 1
-bpbReservedSectors:   DW 1
-bpbNumberOfFATs:      DB 2
-bpbRootEntries:       DW 224
-bpbTotalSectors:      DW 2880
-bpbMedia:             DB 0xf0           ;; 0xF1
-bpbSectorsPerFAT:     DW 9
-bpbSectorsPerTrack:   DW 18
-bpbHeadsPerCylinder:  DW 2
-bpbHiddenSectors:     DD 0
-bpbTotalSectorsBig:   DD 0
-bsDriveNumber:        DB 0
-bsUnused:             DB 0
-bsExtBootSignature:   DB 0x29
-bsSerialNumber:       DD 0xa0a1a2a3
-bsVolumeLabel:        DB "MOS FLOPPY "
-bsFileSystem:         DB "FAT12   "
+OEM                db "My OS   "
+BytesPerSector:    DW 512
+SectorsPerCluster: DB 1
+ReservedSectors:   DW 1
+NumberOfFATs:      DB 2
+RootEntries:       DW 224
+TotalSectors:      DW 2880
+Media:             DB 0xf0           ;; 0xF1
+SectorsPerFAT:     DW 9
+SectorsPerTrack:   DW 18
+HeadsPerCylinder:  DW 2
+HiddenSectors:     DD 0
+TotalSectorsBig:   DD 0
+DriveNumber:        DB 0
+Unused:             DB 0
+ExtBootSignature:   DB 0x29
+SerialNumber:       DD 0xa0a1a2a3
+VolumeLabel:        DB "MOS FLOPPY "
+FileSystem:         DB "FAT12   "
 
-datasector            dw 0x0000
-cluster               dw 0x0000
+DataSector            dw 0x0000
+Cluster              dw 0x0000
 
-absoluteSector        db 0x00
-absoluteHead          db 0x00
-absoluteTrack         db 0x00
+AbsoluteSector        db 0x00
+AbsoluteHead          db 0x00
+AbsoluteTrack         db 0x00
 
 ;************************************************;
 ; Convert CHS to LBA
 ; LBA = (cluster - 2) * sectors per cluster
 ;************************************************;
-ClusterLBA:                             ; Fat12.inc (177)
+ClusterLBA:                             ;
     sub   ax,0x0002                     ; zero base cluster number
     xor   cx,cx
-    mov   cl,BYTE [bpbSectorsPerCluster] ; convert byte to word
+    mov   cl,BYTE [SectorsPerCluster]   ; convert byte to word
     mul   cx
-    add   ax,WORD [datasector]          ; base data sector
+    add   ax,WORD [DataSector]          ; base data sector
     ret
 
 ;************************************************;
@@ -599,15 +567,15 @@ ClusterLBA:                             ; Fat12.inc (177)
 ; absolute track  = logical sector / (sectors per track * number of heads)
 ;
 ;************************************************;
-LBACHS:                                 ; Local
+LBACHS:                                 ;
     xor   dx,dx                         ; prepare dx:ax for operation
-    div   WORD [bpbSectorsPerTrack]     ; calculate
+    div   WORD [SectorsPerTrack]        ; calculate
     inc   dl                            ; adjust for sector 0
-    mov   BYTE [absoluteSector],dl
+    mov   BYTE [AbsoluteSector],dl
     xor   dx,dx                         ; prepare dx:ax for operation
-    div   WORD [bpbHeadsPerCylinder]    ; calculate
-    mov   BYTE [absoluteHead],dl
-    mov   BYTE [absoluteTrack],al
+    div   WORD [HeadsPerCylinder]       ; calculate
+    mov   BYTE [AbsoluteHead],dl
+    mov   BYTE [AbsoluteTrack],al
     ret
 
 ;************************************************;
@@ -626,10 +594,10 @@ ReadSectors:                            ; Fat12.inc (53,83,180)
     call  LBACHS                        ; (Routine is local) convert starting sector to CHS
     mov   ah,0x02                       ; BIOS read sector
     mov   al,0x01                       ; read one sector
-    mov   ch,BYTE [absoluteTrack]       ; track
-    mov   cl,BYTE [absoluteSector]      ; sector
-    mov   dh,BYTE [absoluteHead]        ; head
-    mov   dl,BYTE [bsDriveNumber]       ; drive
+    mov   ch,BYTE [AbsoluteTrack]       ; track
+    mov   cl,BYTE [AbsoluteSector]      ; sector
+    mov   dh,BYTE [AbsoluteHead]        ; head
+    mov   dl,BYTE [DriveNumber]         ; drive
     int   0x13                          ; invoke BIOS
     jnc   .SUCCESS                      ; test for read error
     xor   ax,ax                         ; BIOS reset disk
@@ -644,7 +612,7 @@ ReadSectors:                            ; Fat12.inc (53,83,180)
     pop   cx
     pop   bx
     pop   ax
-    add   bx,WORD [bpbBytesPerSector]   ; queue next buffer
+    add   bx,WORD [BytesPerSector]      ; queue next buffer
     inc   ax                            ; queue next sector
     loop  .MAIN                         ; read next sector
     ret
@@ -662,7 +630,7 @@ ReadSectors:                            ; Fat12.inc (53,83,180)
 ;*******************************************
 ; Load Root Directory Table to 0x7e00
 ;*******************************************
-LoadRoot:                               ; Stage2.asm (84)
+LoadRoot:
     pusha                               ; store registers
     push  es
 
@@ -671,17 +639,17 @@ LoadRoot:                               ; Stage2.asm (84)
     xor   cx,cx                         ; clear registers
     xor   dx,dx
     mov   ax,32                         ; 32 byte directory entry
-    mul   WORD [bpbRootEntries]         ; total size of directory
-    div   WORD [bpbBytesPerSector]      ; sectors used by directory
+    mul   WORD [RootEntries]            ; total size of directory
+    div   WORD [BytesPerSector]         ; sectors used by directory
     xchg  ax,cx                         ; move into AX
 
     ; compute location of root directory and store in "ax"
 
-    mov   al,BYTE [bpbNumberOfFATs]     ; number of FATs
-    mul   WORD [bpbSectorsPerFAT]       ; sectors used by FATs
-    add   ax,WORD [bpbReservedSectors]
-    mov   WORD [datasector],ax          ; base of root directory
-    add   WORD [datasector],cx
+    mov   al,BYTE [NumberOfFATs]        ; number of FATs
+    mul   WORD [SectorsPerFAT]          ; sectors used by FATs
+    add   ax,WORD [ReservedSectors]
+    mov   WORD [DataSector],ax          ; base of root directory
+    add   WORD [DataSector],cx
 
     ; read root directory into 0x7e00
 
@@ -698,20 +666,20 @@ LoadRoot:                               ; Stage2.asm (84)
 ;
 ; Parm/ ES:DI => Root Directory Table
 ;*******************************************
-LoadFAT:                                ; (Routine is local)
+LoadFAT:
     pusha                               ; store registers
     push  es
 
     ; compute size of FAT and store in "cx"
 
     xor   ax,ax
-    mov   al,BYTE [bpbNumberOfFATs]     ; number of FATs
-    mul   WORD [bpbSectorsPerFAT]       ; sectors used by FATs
+    mov   al,BYTE [NumberOfFATs]        ; number of FATs
+    mul   WORD [SectorsPerFAT]          ; sectors used by FATs
     mov   cx,ax
 
     ; compute location of FAT and store in "ax"
 
-    mov   ax,WORD [bpbReservedSectors]
+    mov   ax,WORD [ReservedSectors]
 
     ; read FAT into memory (Overwrite our bootloader at 0x7c00)
 
@@ -729,7 +697,7 @@ LoadFAT:                                ; (Routine is local)
 ; parm/ DS:SI => File name
 ; ret/ AX => File index number in directory table. -1 if error
 ;*******************************************
-FindFile:                               ; (Routine is local)
+FindFile:
     push  cx                            ; store registers
     push  dx
     push  bx
@@ -737,7 +705,7 @@ FindFile:                               ; (Routine is local)
 
     ; browse root directory for binary image
 
-    mov   cx,WORD [bpbRootEntries]      ; load loop counter
+    mov   cx,WORD [RootEntries]         ; load loop counter
     mov   di,ROOT_OFFSET                ; locate first root entry at 1 MB mark
     cld                                 ; clear direction flag
 
@@ -774,7 +742,7 @@ FindFile:                               ; (Routine is local)
 ; ret/ AX => -1 on error, 0 on success
 ; ret/ CX => number of sectors read
 ;*******************************************
-LoadFile:                               ; Stage2.asm (93)
+LoadFile:
     xor ecx,ecx                         ; size of file in sectors
     push  ecx
 
@@ -799,7 +767,7 @@ LoadFile:                               ; Stage2.asm (93)
     push  word ROOT_SEG                 ;root segment loc
     pop   es
     mov   dx,WORD [es:di + 0x001A]      ; DI points to file entry in root directory table. Refrence the table...
-    mov   WORD [cluster],dx             ; file's first cluster
+    mov   WORD [Cluster],dx             ; file's first cluster
     pop   bx                            ; get location to write to so we dont screw up the stack
     pop   es
     push  bx                            ; store location for later again
@@ -809,12 +777,12 @@ LoadFile:                               ; Stage2.asm (93)
   .LOAD_IMAGE:
     ; load the cluster
 
-    mov   ax,WORD [cluster]             ; cluster to read
+    mov   ax,WORD [Cluster]             ; cluster to read
     pop   es                            ; bx:bp=es:bx
     pop   bx
     call  ClusterLBA                    ; (Routine is in Floppy16.inc)
     xor   cx,cx
-    mov   cl,BYTE [bpbSectorsPerCluster]
+    mov   cl,BYTE [SectorsPerCluster]
     call  ReadSectors                   ; (Routine is in Floppy16.inc)
     pop   ecx
     inc   ecx                           ; add one more sector to counter
@@ -827,7 +795,7 @@ LoadFile:                               ; Stage2.asm (93)
 
   ; get next cluster
 
-    mov   ax,WORD [cluster]             ; identify current cluster
+    mov   ax,WORD [Cluster]             ; identify current cluster
     mov   cx,ax                         ; copy current cluster
     mov   dx,ax
     shr   dx,0x0001                     ; divide by two
@@ -847,7 +815,7 @@ LoadFile:                               ; Stage2.asm (93)
     shr dx,0x0004                       ; take high 12 bits
 
   .DONE:
-    mov   WORD [cluster],dx
+    mov   WORD [Cluster],dx
     cmp   dx,0x0ff0                     ; test for end of file marker
     jb    .LOAD_IMAGE
 
@@ -883,16 +851,16 @@ LoadFile:                               ; Stage2.asm (93)
 %define _COMMON_INC_INCLUDED
 
 ; where the kernel is to be loaded to in protected mode
-%define IMAGE_PMODE_BASE 0x100000       ; Stage2.asm(150,158)
+%define IMAGE_PMODE_BASE 0x100000
 
 ; where the kernel is to be loaded to in real mode
-%define IMAGE_RMODE_BASE 0x3000         ; Stage2.asm(91,149)
+%define IMAGE_RMODE_BASE 0x3000
 
 ; kernel name (Must be 11 bytes)
-ImageName     db "STAGE3  BIN"          ; Stage2.asm(92)
+ImageName     db "STAGE3  BIN"
 
 ; size of kernel image in bytes
-ImageSize     db 0                      ; Stage2.asm(94,143)
+ImageSize     db 0
 
 %endif
 
@@ -904,8 +872,8 @@ ImageSize     db 0                      ; Stage2.asm(94,143)
 ; Data Section
 ;*******************************************************
 
-LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v4...", 0x00
-msgFailure db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT STAGE3.BIN. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
+LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v7...", 0x00
+FailureMsg db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT STAGE3.BIN. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
 
 ;*******************************************************
 ; STAGE 2 ENTRY POINT
@@ -934,20 +902,20 @@ main:
     ;   Install our GDT   ;
     ;-------------------------------;
 
-    call  InstallGDT                    ; (Routine is in Gdt.inc) install our GDT
+    call  InstallGDT
 
     ;-------------------------------;
     ;   Enable A20      ;
     ;-------------------------------;
 
-    call  EnableA20_KKbrd_Out           ; (Routine is in A20.inc)
+    call  EnableA20_KKbrd_Out
 
     ;-------------------------------;
     ;   Print loading message ;
     ;-------------------------------;
 
-    mov si, LoadingMsg
-    call  Puts16                        ; (Routine is in Stdio.inc)
+    mov si,LoadingMsg
+    call  Puts16
     mov   ah,0x00
     int   0x16                          ; await keypress
 
@@ -964,12 +932,12 @@ main:
     mov   ebx,0                         ; BX:BP points to buffer to load to
     mov   bp,IMAGE_RMODE_BASE
     mov   si,ImageName                  ; our file to load
-    call  LoadFile                      ; (Routine is in Fat12.inc) load our file
+    call  LoadFile                      ;
     mov   dword [ImageSize],ecx         ; save size of kernel
     cmp   ax,0                          ; Test for success
     je    EnterStage3                   ; yep--onto Stage 3!
-    mov   si,msgFailure                 ; Nope--print error
-    call  Puts16                        ; (Routine is in Stdio.inc)
+    mov   si,FailureMsg                 ; Nope--print error
+    call  Puts16                        ;
     mov   ah,0
     int   0x16                          ; await keypress
     int   0x19                          ; warm boot computer
@@ -1015,7 +983,7 @@ Stage3:
 
 CopyImage:
     mov   eax,dword [ImageSize]
-    movzx ebx,word [bpbBytesPerSector]
+    movzx ebx,word [BytesPerSector]
     mul   ebx
     mov   ebx,4
     div   ebx

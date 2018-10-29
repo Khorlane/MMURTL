@@ -1,4 +1,4 @@
-;**********************************************************
+;**************************************************************************************************
 ; Stage1.asm
 ;   A Simple Boot Sector that:
 ;   1. is exactly 512 bytes long
@@ -11,8 +11,8 @@
 ; Operating Systems Development Tutorial
 ; http://www.brokenthorn.com/Resources/OSDevIndex.html
 ;
-; nasm -f bin Stage1.asm -o Stage1.bin
-;**********************************************************
+; nasm -f bin Stage1.asm -o Stage1.bin -l Stage1.lst
+;**************************************************************************************************
 
 [bits 16]                               ; we are in 16 bit real mode
     ORG   0                             ; we will set regisers later
@@ -146,7 +146,7 @@ ReadSectorOk:
 ;--------------------------------------------------------------------------------------------------
 Booter:
     ;-------------------------------------------------------
-    ;- code located at 0000:7C00, adjust segment registers -
+    ;- code located at 0000:7C00, adjust segment registers
     ;-------------------------------------------------------
     CLI                                 ; disable interrupts
     MOV   AX,0x07C0                     ; setup
@@ -155,17 +155,17 @@ Booter:
     MOV   FS,AX                         ;    to our
     MOV   GS,AX                         ;     segment
 
-    ;----------------
-    ;- create stack -
-    ;----------------
+    ;--------------
+    ;- create stack
+    ;--------------
     MOV   AX,0x0000                     ; set the
     MOV   SS,AX                         ;  stack to
     MOV   SP,0xFFFF                     ;   somewhere safe
     STI                                 ; restore interrupts
 
-    ;---------------------------
-    ;- Display loading message -
-    ;---------------------------
+    ;-------------------------
+    ;- Display loading message
+    ;-------------------------
     MOV   SI,LoadingMsg                 ; si points to first byte in msgLoading
     CALL  Print                         ; print message
     MOV   AH,0X00                       ; wait
@@ -213,10 +213,10 @@ FindFat:
     LOOP  FindFat                       ; keep looking
     JMP   FindFatFailed                 ; file not found, this is bad!
 
-;----------------------------------------------------
-; Load FAT
-; Tutorial 6: Bootloaders 4
-;----------------------------------------------------
+    ;--------------------------
+    ; Load FAT
+    ; Tutorial 6: Bootloaders 4
+    ;--------------------------
 LoadFat:
     ; save starting cluster of boot image
     MOV   DX,WORD [DI + 0x001A]         ; save file's
@@ -233,7 +233,7 @@ LoadFat:
 
     ; read FAT into memory (7C00:0200)
     MOV   BX,0x0200                     ; read FAT
-    CALL  ReadSector                    ;  into memory about our bootcode
+    CALL  ReadSector                    ;  into memory above our bootcode
 
 ;--------------------------------------------------------------------------------------------------
 ; Load Stage 2
@@ -262,18 +262,18 @@ LoadStage2:
     ADD   CX,DX                         ; sum for (3/2)
     MOV   BX,0x0200                     ; location of FAT in memory
     ADD   BX,CX                         ; index into FAT
-    MOV   DX,WORD [BX]                  ; read two bytes from FAT
-    TEST  AX,0x0001
-    JNZ   LoadStage2OddCluster
+    MOV   DX,WORD [BX]                  ; read two bytes from FAT, indexed by BX
+    TEST  AX,0x0001                     ; test under mask, if cluster number is odd
+    JNZ   LoadStage2OddCluster          ;  then process Odd Cluster
 
 LoadStage2EvenCluster:
-    AND   DX,0000111111111111b          ; take low twelve bits
-    JMP   LoadStage2Done
+    AND   DX,0000111111111111b          ; take low  twelve bits DX x'ABCD' -> x'0BCD'
+    JMP   LoadStage2CheckDone
 
 LoadStage2OddCluster:
-    SHR   DX,0x0004                     ; take high twelve bits
+    SHR   DX,0x0004                     ; take high twelve bits DX x'ABCD' -> x'0ABC'
 
-LoadStage2Done:
+LoadStage2CheckDone:
     MOV   WORD [Cluster],DX             ; store new cluster
     CMP   DX,0x0FF0                     ; If DX is less than EOF (0x0FF0)
     JB    LoadStage2                    ;   then keep going (JB = Jump Below)
@@ -303,7 +303,7 @@ FindFatFailed:
     Cluster         DW 0x0000
     DataSector      DW 0x0000
     FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2. Press Any Key to Reboot", 0x0D, 0x0A, 0x00
-    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v6 ", 0x00
+    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v7 ", 0x00
     NewLineMsg      DB 0x0D, 0x0A, 0x00
     ProgressMsg     DB ".", 0x00
     Stage2Name      DB "STAGE2  BIN"

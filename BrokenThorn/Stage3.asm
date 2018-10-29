@@ -6,7 +6,7 @@
 ; Operating Systems Development Tutorial
 ; http://www.brokenthorn.com/Resources/OSDevIndex.html
 ;
-; nasm -f bin Stage3.asm -o Stage3.bin
+; nasm -f bin Stage3.asm -o Stage3.bin -l Stage3.lst
 ;**********************************************************
 
 org 0x100000                            ; Kernel starts at 1 MB
@@ -318,7 +318,7 @@ GotoXY:
 ; end of %include "stdio.inc"                    ; basic i/o routines
 ;------------------------------------------------------------------------------------------------------------------------------------------
 
-msg db  0x0A, 0x0A, "                     - OS Development Series v4 -"
+msg db  0x0A, 0x0A, "                     - OS Development Series v7 -"
     db  0x0A, 0x0A, "                     MYOS 32 Bit Kernel Executing", 0x0A, 0
 
 Stage3:
