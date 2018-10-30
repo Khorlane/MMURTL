@@ -9,18 +9,20 @@
 ; nasm -f bin Stage2.asm -o Stage2.bin -l Stage2.lst
 ;**********************************************************
 
-; Remember the memory map-- 0x500 through 0x7bff is unused above the BIOS data area.
-; We are loaded at 0x500 (0x50:0)
+; Remember the memory map-- 500h through 7BFFh is unused above the BIOS data area.
+; We are loaded at 500h (50h:0h)
 [bits 16]
-org 0x500
-
+    org   0500h
     jmp   main                          ; go to start
 
 ;--------------------------------------------------------------------------------------------------
+; 16 bit Video Routines
+;--------------------------------------------------------------------------------------------------
+;-----------------------------------
 ; Puts16 ()
 ;   -Prints a null terminated string
 ; DS=>SI: 0 terminated string
-;--------------------------------------------------------------------------------------------------
+;-----------------------------------
 [bits 16]
 Puts16:
     pusha                               ; save registers
@@ -36,10 +38,10 @@ Puts16Done:
     ret                                 ; we are done, so return
 
 ;--------------------------------------------------------------------------------------------------
-; Video Data Section
+; 32 bit Video Routines
 ;--------------------------------------------------------------------------------------------------
 [bits 32]
-VIDMEM      EQU 0xB8000                 ; video memory
+VIDMEM      EQU 0B8000h                 ; video memory
 COLS        EQU 80                      ; width and height of screen
 LINES       EQU 25
 CHAR_ATTRIB EQU 63                      ; character attribute (White text on light blue background)
@@ -47,11 +49,11 @@ CHAR_ATTRIB EQU 63                      ; character attribute (White text on lig
 _CurX       DB  0                       ; current x/y location
 _CurY       DB  0
 
-;--------------------------------------------------------------------------------------------------
+;---------------------------------
 ; Putch32 ()
 ;   - Prints a character to screen
 ; BL => Character to print
-;--------------------------------------------------------------------------------------------------
+;---------------------------------
 [bits 32]
 Putch32:
     pusha                               ; save registers
@@ -104,7 +106,7 @@ Putch32:
     ;-------------------
     ; Watch for new line
     ;-------------------
-    cmp   bl,0x0A                       ; is it a newline character?
+    cmp   bl,0Ah                        ; is it a newline character?
     je    .Row                          ; yep--go to next row
 
     ;------------------
@@ -136,11 +138,11 @@ Putch32:
     popa                                ; restore registers and return
     ret
 
-;--------------------------------------------------------------------------------------------------
+;---------------------------------------
 ; Puts32 ()
 ;   - Prints a null terminated string
 ; parm\ EBX = address of string to print
-;--------------------------------------------------------------------------------------------------
+;---------------------------------------
 [bits 32]
 Puts32:
     ;----------------
@@ -164,18 +166,18 @@ Puts32:
     ;--------------------
     call  Putch32                       ; Nope-print it out
 
-    ;-------------------------------;
-    ; Go to next character        ;
-    ;-------------------------------;
+    ;---------------------
+    ; Go to next character
+    ;---------------------
 
     inc   edi                           ; go to next character
     jmp   .loop
 
   .done:
 
-    ;-------------------------------;
-    ; Update hardware cursor      ;
-    ;-------------------------------;
+    ;-----------------------
+    ; Update hardware cursor
+    ;-----------------------
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
 
@@ -186,19 +188,19 @@ Puts32:
     popa                                ; restore registers, and return
     ret
 
-;--------------------------------------------------------------------------------------------------
+;---------------------------
 ; MoveCur ()
 ;   - Update hardware cursor
 ; parm/ bh = Y pos
 ; parm/ bl = x pos
-;--------------------------------------------------------------------------------------------------
+;---------------------------
 [bits 32]
 MovCur:
     pusha                               ; save registers (aren't you getting tired of this comment?)
 
-    ;-------------------------------;
-    ;   Get current position        ;
-    ;-------------------------------;
+    ;---------------------
+    ; Get current position        
+    ;---------------------
     ; Here, _CurX and _CurY are relitave to the current position on screen, not in memory.
     ; That is, we don't need to worry about the byte alignment we do when displaying characters,
     ; so just follow the forumla: location = _CurX + _CurY * COLS
@@ -210,9 +212,9 @@ MovCur:
     add   al,bl                         ; Now add x
     mov   ebx,eax
 
-    ;--------------------------------------;
-    ;   Set low byte index to VGA register ;
-    ;--------------------------------------;
+    ;-----------------------------------
+    ; Set low byte index to VGA register 
+    ;-----------------------------------
     mov   al,0Fh
     mov   dx,03D4h
     out   dx,al
@@ -221,9 +223,9 @@ MovCur:
     mov   dx,03D5h
     out   dx,al                         ; low byte
 
-    ;---------------------------------------;
-    ;   Set high byte index to VGA register ;
-    ;---------------------------------------;
+    ;------------------------------------
+    ; Set high byte index to VGA register 
+    ;------------------------------------
     xor   eax,eax
 
     mov   al,0Eh
@@ -237,10 +239,10 @@ MovCur:
     popa
     ret
 
-;**************************************************;
+;------------------
 ; ClrScr32 ()
 ;   - Clears screen
-;**************************************************;
+;------------------
 [bits 32]
 ClrScr32:
     pusha
@@ -255,12 +257,12 @@ ClrScr32:
     popa
     ret
 
-;**************************************************;
+;-----------------------------
 ; GotoXY ()
 ;   - Set current X/Y location
 ; parm\ AL=X position
 ; parm\ AH=Y position
-;**************************************************;
+;-----------------------------
 [bits 32]
 GotoXY:
     pusha
@@ -269,9 +271,9 @@ GotoXY:
     popa
     ret
 
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 ; Install our GDT
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 [bits 16]
 InstallGDT:
     cli                                 ; clear interrupts
@@ -281,9 +283,9 @@ InstallGDT:
     popa                                ; restore registers
     ret                                 ; All done!
 
-;*******************************************
+;------------------------------
 ; Global Descriptor Table (GDT)
-;*******************************************
+;------------------------------
 gdt_data:                               ; Only referenced in this module
     dd    0                             ; null descriptor
     dd    0
@@ -326,29 +328,29 @@ EnableA20_KKbrd_Out:
     pusha
 
     call  wait_input                    ; wait for keypress
-    mov   al,0xAD
-    out   0x64,al                       ; disable keyboard
+    mov   al,0ADh
+    out   64h,al                        ; disable keyboard
     call  wait_input                    ;
 
-    mov   al,0xD0
-    out   0x64,al                       ; tell controller to read output port
+    mov   al,0D0h
+    out   64h,al                        ; tell controller to read output port
     call  wait_output                   ;
 
-    in    al,0x60
+    in    al,60h
     push  eax                           ; get output port data and store it
     call  wait_input                    ;
 
-    mov   al,0xD1
-    out   0x64,al                       ; tell controller to write output port
+    mov   al,0D1h
+    out   64h,al                        ; tell controller to write output port
     call  wait_input                    ;
 
     pop   eax
     or    al,2                          ; set bit 1 (enable a20)
-    out   0x60,al                       ; write out data back to the output port
+    out   60h,al                        ; write out data back to the output port
 
     call  wait_input                    ;
-    mov   al,0xAE                       ; enable keyboard
-    out   0x64,al
+    mov   al,0AEh                       ; enable keyboard
+    out   64h,al
 
     call  wait_input                    ; wait for keypress
     popa
@@ -357,14 +359,14 @@ EnableA20_KKbrd_Out:
 
 ; wait for input buffer to be clear
 wait_input:
-    in    al,0x64
+    in    al,64h
     test  al,2
     jnz   wait_input
     ret
 
 ; wait for output buffer to be clear
 wait_output:
-    in    al,0x64
+    in    al,64h
     test  al,1
     jz    wait_output
     ret
@@ -375,7 +377,7 @@ wait_output:
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
 ClusterLBA:                             ;
-    sub   ax,0x0002                     ; zero base cluster number
+    sub   ax,0002h                      ; zero base cluster number
     xor   cx,cx
     mov   cl,BYTE [SectorsPerCluster]   ; convert byte to word
     mul   cx
@@ -411,28 +413,28 @@ LBACHS:                                 ;
 [bits 16]
 ReadSectors:
   .MAIN:
-    mov   di,0x0005                     ; five retries for error
+    mov   di,0005h                      ; five retries for error
   .SECTORLOOP:
     push  ax
     push  bx
     push  cx
     call  LBACHS                        ; convert starting sector to CHS
-    mov   ah,0x02                       ; BIOS read sector
-    mov   al,0x01                       ; read one sector
+    mov   ah,02h                        ; BIOS read sector
+    mov   al,01h                        ; read one sector
     mov   ch,BYTE [AbsoluteTrack]       ; track
     mov   cl,BYTE [AbsoluteSector]      ; sector
     mov   dh,BYTE [AbsoluteHead]        ; head
     mov   dl,BYTE [DriveNumber]         ; drive
-    int   0x13                          ; invoke BIOS
+    int   13h                           ; invoke BIOS
     jnc   .SUCCESS                      ; test for read error
     xor   ax,ax                         ; BIOS reset disk
-    int   0x13                          ; invoke BIOS
+    int   13h                           ; invoke BIOS
     dec   di                            ; decrement error counter
     pop   cx
     pop   bx
     pop   ax
     jnz   .SECTORLOOP                   ; attempt to read again
-    int   0x18
+    int   18h
   .SUCCESS:
     pop   cx
     pop   bx
@@ -443,7 +445,7 @@ ReadSectors:
     ret
 
 ;--------------------------------------------------------------------------------------------------
-; Load Root Directory Table to 0x7e00
+; Load Root Directory Table to 07e00h
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
 LoadRoot:
@@ -465,17 +467,17 @@ LoadRoot:
     mov   WORD [DataSector],ax          ; base of root directory
     add   WORD [DataSector],cx
 
-    ; read root directory into 0x7e00
+    ; read root directory into 07E00h
     push  word ROOT_SEG
     pop   es
-    mov   bx, 0                         ; copy root dir
+    mov   bx,0                          ; copy root dir
     call  ReadSectors                   ; read in directory table
     pop   es
     popa                                ; restore registers and return
     ret
 
 ;--------------------------------------------------------------------------------------------------
-; Loads FAT table to 0x7c00
+; Loads FAT table to 07C00h
 ;
 ; Parm/ ES:DI => Root Directory Table
 ;--------------------------------------------------------------------------------------------------
@@ -493,10 +495,10 @@ LoadFAT:
     ; compute location of FAT and store in "ax"
     mov   ax,WORD [ReservedSectors]
 
-    ; read FAT into memory (Overwrite our bootloader at 0x7c00)
+    ; read FAT into memory (Overwrite our bootloader at 07C00h)
     push  word FAT_SEG
     pop   es
-    xor   bx, bx
+    xor   bx,bx
     call  ReadSectors
     pop   es
     popa                                ; restore registers and return
@@ -515,7 +517,6 @@ FindFile:
     mov   bx,si                         ; copy filename for later
 
     ; browse root directory for binary image
-
     mov   cx,WORD [RootEntries]         ; load loop counter
     mov   di,ROOT_OFFSET                ; locate first root entry at 1 MB mark
     cld                                 ; clear direction flag
@@ -577,7 +578,7 @@ LoadFile:
     ; get starting cluster
     push  word ROOT_SEG                 ;root segment loc
     pop   es
-    mov   dx,WORD [es:di + 0x001A]      ; DI points to file entry in root directory table. Refrence the table...
+    mov   dx,WORD [es:di + 0001Ah]      ; DI points to file entry in root directory table. Refrence the table...
     mov   WORD [Cluster],dx             ; file's first cluster
     pop   bx                            ; get location to write to so we dont screw up the stack
     pop   es
@@ -607,13 +608,13 @@ LoadFile:
     mov   ax,WORD [Cluster]             ; identify current cluster
     mov   cx,ax                         ; copy current cluster
     mov   dx,ax
-    shr   dx,0x0001                     ; divide by two
+    shr   dx,0001h                      ; divide by two
     add   cx,dx                         ; sum for (3/2)
 
     mov   bx,0                          ;location of fat in memory
     add   bx,cx
     mov   dx,WORD [es:bx]
-    test  ax,0x0001                     ; test for odd or even cluster
+    test  ax,0001h                      ; test for odd or even cluster
     jnz   .ODD_CLUSTER
 
   .EVEN_CLUSTER:
@@ -621,11 +622,11 @@ LoadFile:
     jmp   .DONE
 
   .ODD_CLUSTER:
-    shr   dx,0x0004                     ; take high 12 bits
+    shr   dx,0004h                      ; take high 12 bits
 
   .DONE:
     mov   WORD [Cluster],dx
-    cmp   dx,0x0ff0                     ; test for end of file marker
+    cmp   dx,0FF0h                      ; test for end of file marker
     jb    .LOAD_IMAGE
 
   .SUCCESS:
@@ -655,9 +656,9 @@ main:
     ;-----------------
     ; Set up our Stack
     ;-----------------
-    mov   ax,0x0                        ; stack begins at 0x9000-0xffff
+    mov   ax,00h                        ; stack begins at 09000h-0FFFFh
     mov   ss,ax
-    mov   sp,0xFFFF
+    mov   sp,0FFFFh
     sti                                 ; enable interrupts
 
     ;----------------
@@ -675,8 +676,8 @@ main:
     ;----------------------
     mov   si,LoadingMsg
     call  Puts16
-    mov   ah,0x00                       ; wait
-    int   0x16                          ;  for keypress
+    mov   ah,00h                        ; wait
+    int   16h                           ;  for keypress
 
     ;----------------------
     ; Initialize filesystem
@@ -700,8 +701,8 @@ main:
     mov   si,FailureMsg                 ; Nope--print error
     call  Puts16                        ;
     mov   ah,0                          ; wait
-    int   0x16                          ;  for keypress
-    int   0x19                          ; warm boot computer
+    int   16h                           ;  for keypress
+    int   19h                           ; warm boot computer
     cli                                 ; If we get here, something really went wrong
     hlt
 
@@ -714,7 +715,7 @@ GoProtected:
     or    eax,1
     mov   cr0,eax
 
-    jmp   CODE_DESC:GoStage3            ; far jump to fix CS. Remember that the code selector is 0x8!
+    jmp   CODE_DESC:GoStage3            ; far jump to fix CS. Remember that the code selector is 08h!
 
   ; Note: Do NOT re-enable interrupts! Doing so will triple fault!
   ; We will fix this in Stage 3.
@@ -731,7 +732,7 @@ GoStage3:
     ;----------------------------
     ; Set Data Segement registers
     ;----------------------------
-    mov   ax,DATA_DESC                  ; set data segments to data selector (0x10)
+    mov   ax,DATA_DESC                  ; set data segments to data selector (10h)
     mov   ds,ax
     mov   ss,ax
     mov   es,ax
@@ -777,7 +778,7 @@ ROOT_SEG          EQU 2E0h
 
 LoadingMsg        DB  0Dh
                   DB  0Ah
-                  DB  "Searching for Operating System v8.7.."
+                  DB  "Searching for Operating System v8.9.."
                   DB  00h
 
 FailureMsg        DB  0Dh
