@@ -15,9 +15,6 @@
     org   0500h
     jmp   main                          ; go to start
 
-;--------------------------------------------------------------------------------------------------
-; 16 bit Video Routines
-;--------------------------------------------------------------------------------------------------
 ;--------------------------------
 ; Prints a null terminated string
 ; DS => SI: 0 terminated string
@@ -48,44 +45,6 @@ InstallGDT:
     sti                                 ; enable interrupts
     popa                                ; restore registers
     ret                                 ; All done!
-
-;--------------------------------------------------------------------------------------------------
-; Global Descriptor Table (GDT)
-; Tutorial 8: Protected Mode
-;--------------------------------------------------------------------------------------------------
-GDT1:
-;----------------
-; null descriptor
-;----------------
-                  DD  0
-                  DD  0
-NULL_DESC         EQU 0
-;----------------
-; code descriptor
-;----------------
-                  DW  0FFFFh            ;limit low
-                  DW  0                 ;base low
-                  DB  0                 ;base middle
-                  DB  10011010b         ;access
-                  DB  11001111b         ;granularity
-                  DB  0                 ;base high
-CODE_DESC         EQU 8h
-;----------------
-; data descriptor
-;----------------
-                  DW  0FFFFh            ; limit low (Same as code)10:56 AM 7/8/2007
-                  DW  0                 ; base low
-                  DB  0                 ; base middle
-                  DB  10010010b         ; access
-                  DB  11001111b         ; granularity
-                  DB  0                 ; base high
-DATA_DESC         EQU 10h
-;-------------------
-; pointer to our GDT
-;-------------------
-GDT2:
-                  DW  GDT2-GDT1-1       ; limit (Size of GDT)
-                  DD  GDT1              ; base of GDT
 
 ;--------------------------------------------------------------------------------------------------
 ; Enable A20 line through output port
@@ -534,6 +493,44 @@ GoStage3:
     ;-----------------
     cli
     hlt
+
+;--------------------------------------------------------------------------------------------------
+; Global Descriptor Table (GDT)
+; Tutorial 8: Protected Mode
+;--------------------------------------------------------------------------------------------------
+GDT1:
+;----------------
+; null descriptor
+;----------------
+                  DD  0
+                  DD  0
+NULL_DESC         EQU 0
+;----------------
+; code descriptor
+;----------------
+                  DW  0FFFFh            ; limit low
+                  DW  0                 ; base low
+                  DB  0                 ; base middle
+                  DB  10011010b         ; access
+                  DB  11001111b         ; granularity
+                  DB  0                 ; base high
+CODE_DESC         EQU 8h
+;----------------
+; data descriptor
+;----------------
+                  DW  0FFFFh            ; limit low
+                  DW  0                 ; base low
+                  DB  0                 ; base middle
+                  DB  10010010b         ; access
+                  DB  11001111b         ; granularity
+                  DB  0                 ; base high
+DATA_DESC         EQU 10h
+;-------------------
+; pointer to our GDT
+;-------------------
+GDT2:
+                  DW  GDT2-GDT1-1       ; limit (Size of GDT)
+                  DD  GDT1              ; base of GDT
 
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
