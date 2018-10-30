@@ -15,10 +15,10 @@
     org   0500h
     jmp   Main                          ; go to start
 
-;--------------------------------
+;--------------------------------------------------------------------------------------------------
 ; Prints a null terminated string
 ; DS => SI: 0 terminated string
-;--------------------------------
+;--------------------------------------------------------------------------------------------------
 [bits 16]
 Puts16:
     pusha                               ; save registers
@@ -50,50 +50,53 @@ InstallGDT:
 ; Enable A20 line through output port
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
-EnableA20_KKbrd_Out:
+EnableA20:
     cli                                 ; disable interrupts
     pusha
 
-    call  wait_input                    ; wait for keypress
+    call  WaitInput                     ; wait for keypress
     mov   al,0ADh
     out   64h,al                        ; disable keyboard
-    call  wait_input                    ;
+    call  WaitInput                    
 
     mov   al,0D0h
     out   64h,al                        ; tell controller to read output port
-    call  wait_output                   ;
+    call  WaitOutput                   
 
     in    al,60h
     push  eax                           ; get output port data and store it
-    call  wait_input                    ;
+    call  WaitInput                    
 
     mov   al,0D1h
     out   64h,al                        ; tell controller to write output port
-    call  wait_input                    ;
+    call  WaitInput                    
 
     pop   eax
     or    al,2                          ; set bit 1 (enable a20)
     out   60h,al                        ; write out data back to the output port
 
-    call  wait_input                    ;
+    call  WaitInput                    
     mov   al,0AEh                       ; enable keyboard
     out   64h,al
 
-    call  wait_input                    ; wait for keypress
+    call  WaitInput                     ; wait for keypress
     popa
     sti                                 ; enable interrupts
     ret
 
-wait_input:
+;------------------------------
+; Helper routines for EnableA20
+;------------------------------
+WaitInput:
     in    al,64h                        ; wait for
     test  al,2                          ;  input buffer
-    jnz   wait_input                    ;   to clear
+    jnz   WaitInput                     ;   to clear
     ret
 
-wait_output:
+WaitOutput:
     in    al,64h                        ; wait for
     test  al,1                          ;  output buffer
-    jz    wait_output                   ;   to clear
+    jz    WaitOutput                   ;   to clear
     ret
 
 ;--------------------------------------------------------------------------------------------------
@@ -141,7 +144,7 @@ LBACHS:                                 ;
 [bits 16]
 ReadSector:
     mov   di,0005h                      ; five retries for error
-ReadSectorLoop:
+ReadSector1:
     push  ax
     push  bx
     push  cx
@@ -153,16 +156,16 @@ ReadSectorLoop:
     mov   dh,BYTE [AbsoluteHead]        ; head
     mov   dl,BYTE [DriveNumber]         ; drive
     int   13h                           ; invoke BIOS
-    jnc   ReadSectorOk                      ; test for read error
+    jnc   ReadSector2                   ; test for read error
     xor   ax,ax                         ; BIOS reset disk
     int   13h                           ; invoke BIOS
     dec   di                            ; decrement error counter
     pop   cx
     pop   bx
     pop   ax
-    jnz   ReadSectorLoop                ; attempt to read again
+    jnz   ReadSector1                ; attempt to read again
     int   18h
-ReadSectorOk:
+ReadSector2:
     pop   cx
     pop   bx
     pop   ax
@@ -178,7 +181,6 @@ ReadSectorOk:
 LoadRootDir:
     pusha                               ; store registers
     push  es
-
     ; compute size of root directory and store in "cx"
     xor   cx,cx                         ; clear registers
     xor   dx,dx
@@ -186,14 +188,12 @@ LoadRootDir:
     mul   WORD [RootEntries]            ; total size of directory
     div   WORD [BytesPerSector]         ; sectors used by directory
     xchg  ax,cx                         ; move into AX
-
     ; compute location of root directory and store in "ax"
     mov   al,BYTE [NumberOfFATs]        ; number of FATs
     mul   WORD [SectorsPerFAT]          ; sectors used by FATs
     add   ax,WORD [ReservedSectors]
     mov   WORD [DataSector],ax          ; base of root directory
     add   WORD [DataSector],cx
-
     ; read root directory into 07E00h
     push  word ROOT_SEG
     pop   es
@@ -211,16 +211,13 @@ LoadRootDir:
 LoadFAT:
     pusha                               ; store registers
     push  es
-
     ; compute size of FAT and store in "cx"
     xor   ax,ax
     mov   al,BYTE [NumberOfFATs]        ; number of FATs
     mul   WORD [SectorsPerFAT]          ; sectors used by FATs
     mov   cx,ax
-
     ; compute location of FAT and store in "ax"
     mov   ax,WORD [ReservedSectors]
-
     ; read FAT into memory (Overwrite our bootloader at 07C00h)
     push  word FAT_SEG
     pop   es
@@ -241,32 +238,28 @@ FindFile:
     push  dx
     push  bx
     mov   bx,si                         ; copy filename for later
-
     ; browse root directory for binary image
     mov   cx,WORD [RootEntries]         ; load loop counter
     mov   di,ROOT_OFFSET                ; locate first root entry at 1 MB mark
     cld                                 ; clear direction flag
-
-  .LOOP:
+FindFile1:
     push  cx
     mov   cx,11                         ; eleven character name. Image name is in SI
     mov   si,bx                         ; image name is in BX
     push  di
     rep   cmpsb                         ; test for entry match
     pop   di
-    je    .Found
+    je    FindFile2
     pop   cx
     add   di,32                         ; queue next directory entry
-    loop  .LOOP
-
-  .NotFound:
+    loop  FindFile1
+    ; Not Found
     pop   bx                            ; restore registers and return
     pop   dx
     pop   cx
     mov   ax,-1                         ; set error code
     ret
-
-  .Found:
+FindFile2:
     pop   ax                            ; return value into AX contains entry of file
     pop   bx                            ; restore registers and return
     pop   dx
@@ -284,23 +277,20 @@ FindFile:
 LoadFile:
     xor   ecx,ecx                       ; size of file in sectors
     push  ecx
-
-  .FIND_FILE:
-    push  bx                            ; BX=>BP points to buffer to write to; store it for later
+    push  bx                            ; BX => BP points to buffer to write to; store it for later
     push  bp
     call  FindFile                      ; find our file. ES:SI contains our filename
     cmp   ax,-1
-    jne   .LOAD_IMAGE_PRE
+    jne   LoadFile1
+    ; failed to find file
     pop   bp
     pop   bx
     pop   ecx
     mov   ax,-1
     ret
-
-  .LOAD_IMAGE_PRE:
+LoadFile1:
     sub   edi,ROOT_OFFSET
     sub   eax,ROOT_OFFSET
-
     ; get starting cluster
     push  word ROOT_SEG                 ;root segment loc
     pop   es
@@ -311,8 +301,7 @@ LoadFile:
     push  bx                            ; store location for later again
     push  es
     call  LoadFAT
-
-  .LOAD_IMAGE:
+LoadFile2:
     ; load the cluster
     mov   ax,WORD [Cluster]             ; cluster to read
     pop   es                            ; bx:bp=es:bx
@@ -329,33 +318,26 @@ LoadFile:
     mov   ax,FAT_SEG                    ;start reading from fat
     mov   es,ax
     xor   bx,bx
-
-  ; get next cluster
+    ; get next cluster
     mov   ax,WORD [Cluster]             ; identify current cluster
     mov   cx,ax                         ; copy current cluster
     mov   dx,ax
     shr   dx,0001h                      ; divide by two
     add   cx,dx                         ; sum for (3/2)
-
     mov   bx,0                          ;location of fat in memory
     add   bx,cx
     mov   dx,WORD [es:bx]
     test  ax,0001h                      ; test for odd or even cluster
-    jnz   .ODD_CLUSTER
-
-  .EVEN_CLUSTER:
-    and   dx,0000111111111111b          ; take low 12 bits
-    jmp   .DONE
-
-  .ODD_CLUSTER:
-    shr   dx,0004h                      ; take high 12 bits
-
-  .DONE:
+    jnz   LoadFile3
+    and   dx,0000111111111111b          ; Even cluster - take low 12 bits
+    jmp   LoadFile4
+LoadFile3:
+    shr   dx,0004h                      ; Odd cluster  - take high 12 bits
+LoadFile4:
     mov   WORD [Cluster],dx
     cmp   dx,0FF0h                      ; test for end of file marker
-    jb    .LOAD_IMAGE
-
-  .SUCCESS:
+    jb    LoadFile2
+    ; We're done
     pop   es
     pop   bx
     pop   ecx
@@ -396,7 +378,7 @@ Main:
     ;-----------
     ; Enable A20
     ;-----------
-    call  EnableA20_KKbrd_Out
+    call  EnableA20
 
     ;----------------------
     ; Print loading message
@@ -542,7 +524,7 @@ ROOT_SEG          EQU 2E0h
 
 LoadingMsg        DB  0Dh
                   DB  0Ah
-                  DB  "Searching for Operating System v1..."
+                  DB  "Searching for Operating System v2..."
                   DB  00h
 
 FailureMsg        DB  0Dh
