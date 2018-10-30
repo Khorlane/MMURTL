@@ -13,7 +13,7 @@
 ; We are loaded at 500h (50h:0h)
 [bits 16]
     org   0500h
-    jmp   main                          ; go to start
+    jmp   Main                          ; go to start
 
 ;--------------------------------
 ; Prints a null terminated string
@@ -139,10 +139,9 @@ LBACHS:                                 ;
 ; ES:EBX = Buffer
 ;-----------------------------------
 [bits 16]
-ReadSectors:
-  .MAIN:
+ReadSector:
     mov   di,0005h                      ; five retries for error
-  .SECTORLOOP:
+ReadSectorLoop:
     push  ax
     push  bx
     push  cx
@@ -154,22 +153,22 @@ ReadSectors:
     mov   dh,BYTE [AbsoluteHead]        ; head
     mov   dl,BYTE [DriveNumber]         ; drive
     int   13h                           ; invoke BIOS
-    jnc   .SUCCESS                      ; test for read error
+    jnc   ReadSectorOk                      ; test for read error
     xor   ax,ax                         ; BIOS reset disk
     int   13h                           ; invoke BIOS
     dec   di                            ; decrement error counter
     pop   cx
     pop   bx
     pop   ax
-    jnz   .SECTORLOOP                   ; attempt to read again
+    jnz   ReadSectorLoop                ; attempt to read again
     int   18h
-  .SUCCESS:
+ReadSectorOk:
     pop   cx
     pop   bx
     pop   ax
     add   bx,WORD [BytesPerSector]      ; queue next buffer
     inc   ax                            ; queue next sector
-    loop  .MAIN                         ; read next sector
+    loop  ReadSector                    ; read next sector
     ret
 
 ;------------------------------------
@@ -199,7 +198,7 @@ LoadRootDir:
     push  word ROOT_SEG
     pop   es
     mov   bx,0                          ; copy root dir
-    call  ReadSectors                   ; read in directory table
+    call  ReadSector                    ; read in directory table
     pop   es
     popa                                ; restore registers and return
     ret
@@ -226,7 +225,7 @@ LoadFAT:
     push  word FAT_SEG
     pop   es
     xor   bx,bx
-    call  ReadSectors
+    call  ReadSector 
     pop   es
     popa                                ; restore registers and return
     ret
@@ -321,7 +320,7 @@ LoadFile:
     call  ClusterLBA
     xor   cx,cx
     mov   cl,BYTE [SectorsPerCluster]
-    call  ReadSectors
+    call  ReadSector 
     pop   ecx
     inc   ecx                           ; add one more sector to counter
     push  ecx
@@ -372,7 +371,7 @@ LoadFile:
 ; - Protected mode (pmode)
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
-main:
+Main:
     ;----------------------------
     ; Set Data Segement registers
     ;----------------------------
