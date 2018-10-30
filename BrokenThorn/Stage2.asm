@@ -20,16 +20,16 @@
 ; DS => SI: 0 terminated string
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
-Puts16:
+PutStr:
     pusha                               ; save registers
-  .Loop1:
+PutStr1:
     lodsb                               ; load next byte from string from SI to AL
     or    al,al                         ; Does AL=0?
-    jz    Puts16Done                    ; Yep, null terminator found-bail out
+    jz    PutStr2                       ; Yep, null terminator found-bail out
     mov   ah,0Eh                        ; Nope-Print the character
     int   10h                           ; invoke BIOS
-    jmp   .Loop1                        ; Repeat until null terminator found
-Puts16Done:
+    jmp   PutStr1                       ; Repeat until null terminator found
+PutStr2:
     popa                                ; restore registers
     ret                                 ; we are done, so return
 
@@ -384,7 +384,7 @@ Main:
     ; Print loading message
     ;----------------------
     mov   si,LoadingMsg
-    call  Puts16
+    call  PutStr
     mov   ah,00h                        ; wait
     int   16h                           ;  for keypress
 
@@ -408,7 +408,7 @@ Main:
     ; This is very bad!
     ;------------------
     mov   si,FailureMsg                 ; Nope--print error
-    call  Puts16                        ;
+    call  PutStr                        ;
     mov   ah,0                          ; wait
     int   16h                           ;  for keypress
     int   19h                           ; warm boot computer
