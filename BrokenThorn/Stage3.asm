@@ -223,7 +223,7 @@ Stage3:
     ;--------------
     ; Set registers
     ;--------------
-    mov   ax,0x10                       ; set data segments to data selector (0x10)
+    mov   ax,10h                        ; set data segments to data selector (10h)
     mov   ds,ax
     mov   ss,ax
     mov   es,ax

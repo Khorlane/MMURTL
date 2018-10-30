@@ -18,11 +18,10 @@
 ;--------------------------------------------------------------------------------------------------
 ; 16 bit Video Routines
 ;--------------------------------------------------------------------------------------------------
-;-----------------------------------
-; Puts16
+;--------------------------------
 ; Prints a null terminated string
 ; DS => SI: 0 terminated string
-;-----------------------------------
+;--------------------------------
 [bits 16]
 Puts16:
     pusha                               ; save registers
@@ -49,11 +48,10 @@ CHAR_ATTRIB EQU 63                      ; character attribute (White text on lig
 _CurX       DB  0                       ; current x/y location
 _CurY       DB  0
 
-;---------------------------------
-; PutCh32
-; Prints a character to screen
+;----------------------------
+; Print a character to screen
 ; BL = Character to print
-;---------------------------------
+;----------------------------
 [bits 32]
 PutCh32:
     pusha                               ; save registers
@@ -138,11 +136,10 @@ PutCh32:
     popa                                ; restore registers and return
     ret
 
-;---------------------------------------
-; Puts32
-; Prints a null terminated string
+;---------------------------------
+; Print a null terminated string
 ; EBX = address of string to print
-;---------------------------------------
+;---------------------------------
 [bits 32]
 Puts32:
     ; Save registers
@@ -175,12 +172,11 @@ Puts32:
     popa                                ; restore registers, and return
     ret
 
-;---------------------------
-; MoveCur
+;-----------------------
 ; Update hardware cursor
 ; bh = Y pos
 ; bl = x pos
-;---------------------------
+;-----------------------
 [bits 32]
 MovCursor:
     pusha                               ; save registers (aren't you getting tired of this comment?)
@@ -220,10 +216,9 @@ MovCursor:
     popa
     ret
 
-;-----------------
-; ClrScr32
-; Clear the screen
-;-----------------
+;-------------
+; Clear Screen
+;-------------
 [bits 32]
 ClrScr32:
     pusha
@@ -240,54 +235,57 @@ ClrScr32:
 
 ;--------------------------------------------------------------------------------------------------
 ; Install our GDT
+; Tutorial 8: Protected Mode
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
 InstallGDT:
-    cli                                 ; clear interrupts
+    cli                                 ; disable interrupts
     pusha                               ; save registers
-    lgdt  [toc]                         ; load GDT into GDTR
+    lgdt  [GDT2]                        ; load GDT into GDTR
     sti                                 ; enable interrupts
     popa                                ; restore registers
     ret                                 ; All done!
 
-;------------------------------
+;--------------------------------------------------------------------------------------------------
 ; Global Descriptor Table (GDT)
-;------------------------------
-gdt_data:                               ; Only referenced in this module
-    dd    0                             ; null descriptor
-    dd    0
-
-; gdt code:                             ; code descriptor
-    dw    0FFFFh                        ;limit low
-    dw    0                             ;base low
-    db    0                             ;base middle
-    db    10011010b                     ;access
-    db    11001111b                     ;granularity
-    db    0                             ;base high
-
-; gdt data:                             ; data descriptor
-    dw    0FFFFh                        ; limit low (Same as code)10:56 AM 7/8/2007
-    dw    0                             ; base low
-    db    0                             ; base middle
-    db    10010010b                     ; access
-    db    11001111b                     ; granularity
-    db    0                             ; base high
-
-end_of_gdt:                             ; Only referenced in this module
-toc:
-    dw    end_of_gdt - gdt_data - 1     ; limit (Size of GDT)
-    dd    gdt_data                      ; base of GDT
-
-;----------------------------------
-; give the descriptor offsets names
-; ---------------------------------
-NULL_DESC EQU 0
-CODE_DESC EQU 8h
-DATA_DESC EQU 10h
-
+; Tutorial 8: Protected Mode
+;--------------------------------------------------------------------------------------------------
+GDT1:
+;----------------
+; null descriptor
+;----------------
+                  DD  0
+                  DD  0
+NULL_DESC         EQU 0
+;----------------
+; code descriptor
+;----------------
+                  DW  0FFFFh            ;limit low
+                  DW  0                 ;base low
+                  DB  0                 ;base middle
+                  DB  10011010b         ;access
+                  DB  11001111b         ;granularity
+                  DB  0                 ;base high
+CODE_DESC         EQU 8h
+;----------------
+; data descriptor
+;----------------
+                  DW  0FFFFh            ; limit low (Same as code)10:56 AM 7/8/2007
+                  DW  0                 ; base low
+                  DB  0                 ; base middle
+                  DB  10010010b         ; access
+                  DB  11001111b         ; granularity
+                  DB  0                 ; base high
+DATA_DESC         EQU 10h
+;-------------------
+; pointer to our GDT
+;-------------------
+GDT2:
+                  DW  GDT2-GDT1-1       ; limit (Size of GDT)
+                  DD  GDT1              ; base of GDT
 
 ;--------------------------------------------------------------------------------------------------
-; Enables a20 line through output port
+; Enable A20 line through output port
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
 EnableA20_KKbrd_Out:
@@ -324,26 +322,27 @@ EnableA20_KKbrd_Out:
     sti                                 ; enable interrupts
     ret
 
-; wait for input buffer to be clear
 wait_input:
-    in    al,64h
-    test  al,2
-    jnz   wait_input
+    in    al,64h                        ; wait for
+    test  al,2                          ;  input buffer
+    jnz   wait_input                    ;   to clear
     ret
 
-; wait for output buffer to be clear
 wait_output:
-    in    al,64h
-    test  al,1
-    jz    wait_output
+    in    al,64h                        ; wait for
+    test  al,1                          ;  output buffer
+    jz    wait_output                   ;   to clear
     ret
 
 ;--------------------------------------------------------------------------------------------------
+; Floppy Driver Routines
+;--------------------------------------------------------------------------------------------------
+;------------------------------------------
 ; Convert CHS to LBA
 ; LBA = (cluster - 2) * sectors per cluster
-;--------------------------------------------------------------------------------------------------
+;------------------------------------------
 [bits 16]
-ClusterLBA:                             ;
+ClusterLBA:
     sub   ax,0002h                      ; zero base cluster number
     xor   cx,cx
     mov   cl,BYTE [SectorsPerCluster]   ; convert byte to word
@@ -351,14 +350,14 @@ ClusterLBA:                             ;
     add   ax,WORD [DataSector]          ; base data sector
     ret
 
-;--------------------------------------------------------------------------------------------------
+;---------------------------------------------------------------------------
 ; Convert LBA to CHS
-; AX=>LBA Address to convert
+; AX = LBA Address to convert
 ;
 ; absolute sector = (logical sector / sectors per track) + 1
 ; absolute head   = (logical sector / sectors per track) MOD number of heads
 ; absolute track  = logical sector / (sectors per track * number of heads)
-;--------------------------------------------------------------------------------------------------
+;---------------------------------------------------------------------------
 [bits 16]
 LBACHS:                                 ;
     xor   dx,dx                         ; prepare dx:ax for operation
@@ -371,12 +370,12 @@ LBACHS:                                 ;
     mov   BYTE [AbsoluteTrack],al
     ret
 
-;--------------------------------------------------------------------------------------------------
-; Reads a series of sectors
-; CX=>Number of sectors to read
-; AX=>Starting sector
-; ES:EBX=>Buffer to read to
-;--------------------------------------------------------------------------------------------------
+;-----------------------------------
+; Read a series of sectors
+; CX     = Number of sectors to read
+; AX     = Starting sector
+; ES:EBX = Buffer
+;-----------------------------------
 [bits 16]
 ReadSectors:
   .MAIN:
@@ -411,11 +410,11 @@ ReadSectors:
     loop  .MAIN                         ; read next sector
     ret
 
-;--------------------------------------------------------------------------------------------------
-; Load Root Directory Table to 07e00h
-;--------------------------------------------------------------------------------------------------
+;------------------------------------
+; Load Root Directory Table to 07E00h
+;------------------------------------
 [bits 16]
-LoadRoot:
+LoadRootDir:
     pusha                               ; store registers
     push  es
 
@@ -443,11 +442,10 @@ LoadRoot:
     popa                                ; restore registers and return
     ret
 
-;--------------------------------------------------------------------------------------------------
+;-----------------------------
 ; Loads FAT table to 07C00h
-;
-; Parm/ ES:DI => Root Directory Table
-;--------------------------------------------------------------------------------------------------
+; ES:DI = Root Directory Table
+;-----------------------------
 [bits 16]
 LoadFAT:
     pusha                               ; store registers
@@ -471,11 +469,11 @@ LoadFAT:
     popa                                ; restore registers and return
     ret
 
-;--------------------------------------------------------------------------------------------------
+;----------------------------------------------------------------
 ; Search for filename in root table
-; parm/ DS:SI => File name
-; ret/ AX => File index number in directory table. -1 if error
-;--------------------------------------------------------------------------------------------------
+; parm/ DS:SI = File name
+; ret/  AX    = File index number in directory table. -1 if error
+;----------------------------------------------------------------
 [bits 16]
 FindFile:
     push  cx                            ; store registers
@@ -514,13 +512,13 @@ FindFile:
     pop   cx
     ret
 
-;--------------------------------------------------------------------------------------------------
+;-----------------------------------------
 ; Load file
-; parm/ ES:SI => File to load
-; parm/ EBX:BP => Buffer to load file to
-; ret/ AX => -1 on error, 0 on success
-; ret/ CX => number of sectors read
-;--------------------------------------------------------------------------------------------------
+; parm/ ES:SI  = File to load
+; parm/ EBX:BP = Buffer to load file to
+; ret/  AX     = -1 on error, 0 on success
+; ret/  CX     = number of sectors read
+;-----------------------------------------
 [bits 16]
 LoadFile:
     xor   ecx,ecx                       ; size of file in sectors
@@ -604,11 +602,12 @@ LoadFile:
     ret
 
 ;--------------------------------------------------------------------------------------------------
-; STAGE 2 ENTRY POINT
-;   -Store BIOS information
-;   -Load Kernel
-;   -Install GDT; go into protected mode (pmode)
-;   -Jump to Stage 3
+; Stage 2 Entry Point
+; - Set Data segment registers and stack
+; - Install GDT
+; - Enable A20
+; - Read Stage3 into memory
+; - Protected mode (pmode)
 ;--------------------------------------------------------------------------------------------------
 [bits 16]
 main:
@@ -649,7 +648,7 @@ main:
     ;----------------------
     ; Initialize filesystem
     ;----------------------
-    call  LoadRoot                      ; Load root directory table
+    call  LoadRootDir                   ; Load root directory table
 
     ;----------------------
     ; Read Kernel from disk
@@ -681,19 +680,18 @@ GoProtected:
     mov   eax,cr0                       ; set bit 0 in cr0--enter pmode
     or    eax,1
     mov   cr0,eax
-
     jmp   CODE_DESC:GoStage3            ; far jump to fix CS. Remember that the code selector is 08h!
 
   ; Note: Do NOT re-enable interrupts! Doing so will triple fault!
   ; We will fix this in Stage 3.
 
-;******************************************************
+;--------------------------------------------------------------------------------------------------
 ; Get to Stage3 - Our Kernel!
 ; - Set Data Segment Register
 ; - Set up our Stack
 ; - Copy Kernel to address 1 MB
 ; - Jump to our Kernel!!
-;******************************************************
+;--------------------------------------------------------------------------------------------------
 [bits 32]
 GoStage3:
     ;----------------------------
