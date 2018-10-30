@@ -96,7 +96,7 @@ WaitInput:
 WaitOutput:
     in    al,64h                        ; wait for
     test  al,1                          ;  output buffer
-    jz    WaitOutput                   ;   to clear
+    jz    WaitOutput                    ;   to clear
     ret
 
 ;--------------------------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ ReadSector1:
     pop   cx
     pop   bx
     pop   ax
-    jnz   ReadSector1                ; attempt to read again
+    jnz   ReadSector1                   ; attempt to read again
     int   18h
 ReadSector2:
     pop   cx
@@ -195,7 +195,7 @@ LoadRootDir:
     mov   WORD [DataSector],ax          ; base of root directory
     add   WORD [DataSector],cx
     ; read root directory into 07E00h
-    push  word ROOT_SEG
+    push  word RootSegment
     pop   es
     mov   bx,0                          ; copy root dir
     call  ReadSector                    ; read in directory table
@@ -219,7 +219,7 @@ LoadFAT:
     ; compute location of FAT and store in "ax"
     mov   ax,WORD [ReservedSectors]
     ; read FAT into memory (Overwrite our bootloader at 07C00h)
-    push  word FAT_SEG
+    push  word FatSegment
     pop   es
     xor   bx,bx
     call  ReadSector 
@@ -240,7 +240,7 @@ FindFile:
     mov   bx,si                         ; copy filename for later
     ; browse root directory for binary image
     mov   cx,WORD [RootEntries]         ; load loop counter
-    mov   di,ROOT_OFFSET                ; locate first root entry at 1 MB mark
+    mov   di,RootOffset                 ; locate first root entry at 1 MB mark
     cld                                 ; clear direction flag
 FindFile1:
     push  cx
@@ -289,10 +289,10 @@ LoadFile:
     mov   ax,-1
     ret
 LoadFile1:
-    sub   edi,ROOT_OFFSET
-    sub   eax,ROOT_OFFSET
+    sub   edi,RootOffset
+    sub   eax,RootOffset
     ; get starting cluster
-    push  word ROOT_SEG                 ;root segment loc
+    push  word RootSegment                 ;root segment loc
     pop   es
     mov   dx,WORD [es:di + 0001Ah]      ; DI points to file entry in root directory table. Refrence the table...
     mov   WORD [Cluster],dx             ; file's first cluster
@@ -315,7 +315,7 @@ LoadFile2:
     push  ecx
     push  bx
     push  es
-    mov   ax,FAT_SEG                    ;start reading from fat
+    mov   ax,FatSegment                    ;start reading from fat
     mov   es,ax
     xor   bx,bx
     ; get next cluster
@@ -324,7 +324,7 @@ LoadFile2:
     mov   dx,ax
     shr   dx,0001h                      ; divide by two
     add   cx,dx                         ; sum for (3/2)
-    mov   bx,0                          ;location of fat in memory
+    mov   bx,0                          ; location of fat in memory
     add   bx,cx
     mov   dx,WORD [es:bx]
     test  ax,0001h                      ; test for odd or even cluster
@@ -397,7 +397,7 @@ Main:
     ; Read Kernel from disk
     ;----------------------
     mov   ebx,0                         ; BX:BP points to buffer to load to
-    mov   bp,IMAGE_RMODE_BASE
+    mov   bp,RModeBase
     mov   si,ImageName                  ; our file to load
     call  LoadFile
     mov   dword [ImageSize],ecx         ; save size of kernel
@@ -423,7 +423,7 @@ GoProtected:
     mov   eax,cr0                       ; set bit 0 in cr0--enter pmode
     or    eax,1
     mov   cr0,eax
-    jmp   CODE_DESC:GoStage3            ; far jump to fix CS. Remember that the code selector is 08h!
+    jmp   CodeDesc:GoStage3             ; far jump to fix CS. Remember that the code selector is 08h!
 
   ; Note: Do NOT re-enable interrupts! Doing so will triple fault!
   ; We will fix this in Stage 3.
@@ -440,7 +440,7 @@ GoStage3:
     ;----------------------------
     ; Set Data Segement registers
     ;----------------------------
-    mov   ax,DATA_DESC                  ; set data segments to data selector (10h)
+    mov   ax,DataDesc                   ; set data segments to data selector (10h)
     mov   ds,ax
     mov   ss,ax
     mov   es,ax
@@ -459,15 +459,15 @@ GoStage3:
     mov   ebx,4
     div   ebx
     cld
-    mov   esi,IMAGE_RMODE_BASE
-    mov   edi,IMAGE_PMODE_BASE
+    mov   esi,RModeBase
+    mov   edi,PModeBase
     mov   ecx,eax
     rep   movsd                         ; copy image to its protected mode address
 
     ;--------------------
     ; Jump to our Kernel!
     ;--------------------
-    jmp   CODE_DESC:IMAGE_PMODE_BASE    ; jump to our kernel! Note: This assumes Kernel's entry point is at 1 MB
+    jmp   CodeDesc:PModeBase            ; jump to our kernel! Note: This assumes Kernel's entry point is at 1 MB
 
     ;-----------------
     ;   Stop execution
@@ -485,7 +485,7 @@ GDT1:
 ;----------------
                   DD  0
                   DD  0
-NULL_DESC         EQU 0
+NullDesc          EQU 0
 ;----------------
 ; code descriptor
 ;----------------
@@ -495,7 +495,7 @@ NULL_DESC         EQU 0
                   DB  10011010b         ; access
                   DB  11001111b         ; granularity
                   DB  0                 ; base high
-CODE_DESC         EQU 8h
+CodeDesc          EQU 8h
 ;----------------
 ; data descriptor
 ;----------------
@@ -505,7 +505,7 @@ CODE_DESC         EQU 8h
                   DB  10010010b         ; access
                   DB  11001111b         ; granularity
                   DB  0                 ; base high
-DATA_DESC         EQU 10h
+DataDesc          EQU 10h
 ;-------------------
 ; pointer to our GDT
 ;-------------------
@@ -516,11 +516,11 @@ GDT2:
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
-FAT_SEG           EQU 2C0h
-IMAGE_PMODE_BASE  EQU 100000h           ; where the kernel is to be loaded to in protected mode
-IMAGE_RMODE_BASE  EQU 3000h             ; where the kernel is to be loaded to in real mode
-ROOT_OFFSET       EQU 2E00h
-ROOT_SEG          EQU 2E0h
+FatSegment        EQU 2C0h
+PModeBase         EQU 100000h           ; where the kernel is to be loaded to in protected mode
+RModeBase         EQU 3000h             ; where the kernel is to be loaded to in real mode
+RootOffset        EQU 2E00h
+RootSegment       EQU 2E0h
 
 LoadingMsg        DB  0Dh
                   DB  0Ah
