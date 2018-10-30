@@ -19,9 +19,9 @@
 ; 16 bit Video Routines
 ;--------------------------------------------------------------------------------------------------
 ;-----------------------------------
-; Puts16 ()
-;   -Prints a null terminated string
-; DS=>SI: 0 terminated string
+; Puts16
+; Prints a null terminated string
+; DS => SI: 0 terminated string
 ;-----------------------------------
 [bits 16]
 Puts16:
@@ -50,12 +50,12 @@ _CurX       DB  0                       ; current x/y location
 _CurY       DB  0
 
 ;---------------------------------
-; Putch32 ()
-;   - Prints a character to screen
-; BL => Character to print
+; PutCh32
+; Prints a character to screen
+; BL = Character to print
 ;---------------------------------
 [bits 32]
-Putch32:
+PutCh32:
     pusha                               ; save registers
     mov   edi,VIDMEM                    ; get pointer to video memory
 
@@ -139,68 +139,53 @@ Putch32:
     ret
 
 ;---------------------------------------
-; Puts32 ()
-;   - Prints a null terminated string
-; parm\ EBX = address of string to print
+; Puts32
+; Prints a null terminated string
+; EBX = address of string to print
 ;---------------------------------------
 [bits 32]
 Puts32:
-    ;----------------
-    ; Store registers
-    ;----------------
+    ; Save registers
     pusha                               ; save registers
     push  ebx                           ; copy the string address
     pop   edi
 
   .loop:
-
-    ;--------------
     ; Get character
-    ;--------------
     mov   bl,byte [edi]                 ; get next character
     cmp   bl,0                          ; is it 0 (Null terminator)?
     je    .done                         ; yep-bail out
 
-    ;--------------------
     ; Print the character
-    ;--------------------
-    call  Putch32                       ; Nope-print it out
+    call  PutCh32                       ; Nope-print it out
 
-    ;---------------------
     ; Go to next character
-    ;---------------------
-
     inc   edi                           ; go to next character
     jmp   .loop
 
   .done:
-
-    ;-----------------------
     ; Update hardware cursor
-    ;-----------------------
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
 
     mov   bh,byte [_CurY]               ; get current position
     mov   bl,byte [_CurX]
-    call  MovCur                        ; update cursor
+    call  MovCursor                     ; update cursor
 
     popa                                ; restore registers, and return
     ret
 
 ;---------------------------
-; MoveCur ()
-;   - Update hardware cursor
-; parm/ bh = Y pos
-; parm/ bl = x pos
+; MoveCur
+; Update hardware cursor
+; bh = Y pos
+; bl = x pos
 ;---------------------------
 [bits 32]
-MovCur:
+MovCursor:
     pusha                               ; save registers (aren't you getting tired of this comment?)
 
-    ;---------------------
-    ; Get current position        
-    ;---------------------
+    ; Get current position
     ; Here, _CurX and _CurY are relitave to the current position on screen, not in memory.
     ; That is, we don't need to worry about the byte alignment we do when displaying characters,
     ; so just follow the forumla: location = _CurX + _CurY * COLS
@@ -212,9 +197,7 @@ MovCur:
     add   al,bl                         ; Now add x
     mov   ebx,eax
 
-    ;-----------------------------------
-    ; Set low byte index to VGA register 
-    ;-----------------------------------
+    ; Set low byte index to VGA register
     mov   al,0Fh
     mov   dx,03D4h
     out   dx,al
@@ -223,9 +206,7 @@ MovCur:
     mov   dx,03D5h
     out   dx,al                         ; low byte
 
-    ;------------------------------------
-    ; Set high byte index to VGA register 
-    ;------------------------------------
+    ; Set high byte index to VGA register
     xor   eax,eax
 
     mov   al,0Eh
@@ -239,10 +220,10 @@ MovCur:
     popa
     ret
 
-;------------------
-; ClrScr32 ()
-;   - Clears screen
-;------------------
+;-----------------
+; ClrScr32
+; Clear the screen
+;-----------------
 [bits 32]
 ClrScr32:
     pusha
@@ -254,20 +235,6 @@ ClrScr32:
     rep   stosw
     mov   byte [_CurX],0
     mov   byte [_CurY],0
-    popa
-    ret
-
-;-----------------------------
-; GotoXY ()
-;   - Set current X/Y location
-; parm\ AL=X position
-; parm\ AH=Y position
-;-----------------------------
-[bits 32]
-GotoXY:
-    pusha
-    mov [_CurX],al                      ; just set the current position
-    mov [_CurY],ah
     popa
     ret
 
