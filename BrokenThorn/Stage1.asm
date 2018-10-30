@@ -303,7 +303,7 @@ FindFatFailed:
     Cluster         DW 0x0000
     DataSector      DW 0x0000
     FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2. Press Any Key to Reboot", 0x0D, 0x0A, 0x00
-    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v7 ", 0x00
+    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v1 ", 0x00
     NewLineMsg      DB 0x0D, 0x0A, 0x00
     ProgressMsg     DB ".", 0x00
     Stage2Name      DB "STAGE2  BIN"

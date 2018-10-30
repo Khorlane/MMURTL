@@ -25,11 +25,10 @@ CHAR_ATTRIB EQU 63                      ; character attribute (White text on lig
 _CurX       DB  0                       ; current x/y location
 _CurY       DB  0
 
-;---------------------------------
-; PutCh32
-; Prints a character to screen
+;----------------------------
+; Print a character to screen
 ; BL = Character to print
-;---------------------------------
+;----------------------------
 [bits 32]
 PutCh32:
     pusha                               ; save registers
@@ -114,11 +113,10 @@ PutCh32:
     popa                                ; restore registers and return
     ret
 
-;---------------------------------------
-; Puts32
-; Prints a null terminated string
+;---------------------------------
+; Print a null terminated string
 ; EBX = address of string to print
-;---------------------------------------
+;---------------------------------
 [bits 32]
 Puts32:
     ; Save registers
@@ -151,12 +149,11 @@ Puts32:
     popa                                ; restore registers, and return
     ret
 
-;---------------------------
-; MoveCur
+;-----------------------
 ; Update hardware cursor
 ; bh = Y pos
 ; bl = x pos
-;---------------------------
+;-----------------------
 [bits 32]
 MovCursor:
     pusha                               ; save registers (aren't you getting tired of this comment?)
@@ -195,10 +192,9 @@ MovCursor:
     popa
     ret
 
-;-----------------
-; ClrScr32
-; Clear the screen
-;-----------------
+;-------------
+; Clear Screen
+;-------------
 [bits 32]
 ClrScr32:
     pusha
@@ -216,7 +212,7 @@ ClrScr32:
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
 ;--------------------------------------------------------------------------------------------------
-msg db  0x0A, 0x0A, "                     - OS Development Series v7 -"
+msg db  0x0A, 0x0A, "                     - OS Development Series v1 -"
     db  0x0A, 0x0A, "                     MYOS 32 Bit Kernel Executing", 0x0A, 0
 
 Stage3:
