@@ -229,8 +229,8 @@ LoadFAT:
 
 ;----------------------------------------------------------------
 ; Search for filename in root table
-; parm/ DS:SI = File name
-; ret/  AX    = File index number in directory table. -1 if error
+; parm DS:SI = File name
+; ret  AX    = File index number in directory table. -1 if error
 ;----------------------------------------------------------------
 [bits 16]
 FindFile:
@@ -268,10 +268,10 @@ FindFile2:
 
 ;-----------------------------------------
 ; Load file
-; parm/ ES:SI  = File to load
-; parm/ EBX:BP = Buffer to load file to
-; ret/  AX     = -1 on error, 0 on success
-; ret/  CX     = number of sectors read
+; parm ES:SI  = File to load
+; parm EBX:BP = Buffer to load file to
+; ret  AX     = -1 on error, 0 on success
+; ret  CX     = number of sectors read
 ;-----------------------------------------
 [bits 16]
 LoadFile:
