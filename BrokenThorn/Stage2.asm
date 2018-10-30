@@ -9,202 +9,163 @@
 ; nasm -f bin Stage2.asm -o Stage2.bin -l Stage2.lst
 ;**********************************************************
 
-[bits 16]
-
 ; Remember the memory map-- 0x500 through 0x7bff is unused above the BIOS data area.
 ; We are loaded at 0x500 (0x50:0)
-
+[bits 16]
 org 0x500
 
     jmp   main                          ; go to start
 
-;*******************************************************
-; Preprocessor directives
-;*******************************************************
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "stdio.inc"                    ; basic i/o routines
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;**********************************************************
-; Stdio.inc
-;   Input/Output routines
-;
-;   Included in Stage2.asm Stage3.asm
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef __STDIO_INC_67343546FDCC56AAB872_INCLUDED__
-%define __STDIO_INC_67343546FDCC56AAB872_INCLUDED__
-
-
-;==========================================================
-;
-;  16 Bit Real Mode Routines
-;==========================================================
-
-
-;************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Puts16 ()
 ;   -Prints a null terminated string
 ; DS=>SI: 0 terminated string
-;************************************************;
-
+;--------------------------------------------------------------------------------------------------
 [bits 16]
-
 Puts16:
     pusha                               ; save registers
   .Loop1:
     lodsb                               ; load next byte from string from SI to AL
     or    al,al                         ; Does AL=0?
     jz    Puts16Done                    ; Yep, null terminator found-bail out
-    mov   ah,0eh                        ; Nope-Print the character
+    mov   ah,0Eh                        ; Nope-Print the character
     int   10h                           ; invoke BIOS
     jmp   .Loop1                        ; Repeat until null terminator found
 Puts16Done:
     popa                                ; restore registers
     ret                                 ; we are done, so return
 
-;==========================================================
-;
-;  32 Bit Protected Mode Routines
-;==========================================================
-
+;--------------------------------------------------------------------------------------------------
+; Video Data Section
+;--------------------------------------------------------------------------------------------------
 [bits 32]
+VIDMEM      EQU 0xB8000                 ; video memory
+COLS        EQU 80                      ; width and height of screen
+LINES       EQU 25
+CHAR_ATTRIB EQU 63                      ; character attribute (White text on light blue background)
 
-%define   VIDMEM      0xB8000           ; video memory
-%define   COLS        80                ; width and height of screen
-%define   LINES       25
-%define   CHAR_ATTRIB 63                ; character attribute (White text on light blue background)
+_CurX       DB  0                       ; current x/y location
+_CurY       DB  0
 
-_CurX db 0                              ; current x/y location
-_CurY db 0
-
-;**************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Putch32 ()
 ;   - Prints a character to screen
 ; BL => Character to print
-;**************************************************;
-
+;--------------------------------------------------------------------------------------------------
+[bits 32]
 Putch32:
     pusha                               ; save registers
     mov   edi,VIDMEM                    ; get pointer to video memory
 
-    ;-------------------------------;
-    ;   Get current position  ;
-    ;-------------------------------;
-
+    ;---------------------
+    ; Get current position
+    ;---------------------
     xor   eax,eax                       ; clear eax
 
-    ;--------------------------------
-    ; Remember: currentPos = x + y * COLS! x and y are in _CurX and _CurY.
-    ; Because there are two bytes per character, COLS=number of characters in a line.
-    ; We have to multiply this by 2 to get number of bytes per line. This is the screen width,
+    ;----------------------------------------------------
+    ; Remember: currentPos = x + y * COLS!
+    ; x and y are in _CurX and _CurY.
+    ; Because there are two bytes per character,
+    ; COLS=number of characters in a line.
+    ; We have to multiply this by 2 to get number
+    ; of bytes per line. This is the screen width,
     ; so multiply screen with * _CurY to get current line
-    ;--------------------------------
-
+    ;----------------------------------------------------
     mov   ecx,COLS*2                    ; Mode 7 has 2 bytes per char, so its COLS*2 bytes per line
     mov   al,byte [_CurY]               ; get y pos
     mul   ecx                           ; multiply y*COLS
     push  eax                           ; save eax--the multiplication
 
-    ;--------------------------------
-    ; Now y * screen width is in eax. Now, just add _CurX. But, again remember that _CurX is relative
-    ; to the current character count, not byte count. Because there are two bytes per character, we
-    ; have to multiply _CurX by 2 first, then add it to our screen width * y.
-    ;--------------------------------
-
+    ;-------------------------------------
+    ; Now y * screen width is in eax.
+    ; Now, just add _CurX. But, again
+    ; remember that _CurX is relative
+    ; to the current character count,
+    ; not byte count. Because there are
+    ; two bytes per character, we
+    ; have to multiply _CurX by 2 first,
+    ; then add it to our screen width * y.
+    ;-------------------------------------
     mov   al,byte [_CurX]               ; multiply _CurX by 2 because it is 2 bytes per char
     mov   cl,2
     mul   cl
     pop   ecx                           ; pop y*COLS result
     add   eax,ecx
 
-    ;-------------------------------
-    ; Now eax contains the offset address to draw the character at, so just add it to the base address
+    ;------------------------------------
+    ; Now eax contains the offset address
+    ; to draw the character at, so just
+    ; add it to the base address
     ; of video memory (Stored in edi)
-    ;-------------------------------
-
+    ;------------------------------------
     xor ecx,ecx
     add edi,eax                         ; add it to the base address
 
-    ;-------------------------------;
-    ;   Watch for new line          ;
-    ;-------------------------------;
-
+    ;-------------------
+    ; Watch for new line
+    ;-------------------
     cmp   bl,0x0A                       ; is it a newline character?
     je    .Row                          ; yep--go to next row
 
-    ;-------------------------------;
-    ;   Print a character           ;
-    ;-------------------------------;
-
+    ;------------------
+    ; Print a character
+    ;------------------
     mov   dl,bl                         ; Get character
     mov   dh,CHAR_ATTRIB                ; the character attribute
     mov   word [edi],dx                 ; write to video display
 
-    ;-------------------------------;
-    ;   Update next position        ;
-    ;-------------------------------;
+    ;---------------------
+    ; Update next position
+    ;---------------------
+    inc   byte [_CurX]                  ; go to next character
+  ; cmp   byte [_CurX],COLS             ; are we at the end of the line?
+  ; je    .Row                          ; yep-go to next row
+    jmp   .done                         ; nope, bail out
 
-    inc   byte [_CurX]                    ; go to next character
-  ; cmp   byte [_CurX], COLS              ; are we at the end of the line?
-  ; je    .Row                            ; yep-go to next row
-    jmp   .done                           ; nope, bail out
-
-    ;-------------------------------;
-    ;   Go to next row              ;
-    ;-------------------------------;
-
+    ;---------------
+    ; Go to next row
+    ;---------------
   .Row:
     mov byte [_CurX],0                  ; go back to col 0
     inc byte [_CurY]                    ; go to next row
 
-    ;-------------------------------;
-    ;   Restore registers & return  ;
-    ;-------------------------------;
-
+    ;---------------------------
+    ; Restore registers & return
+    ;---------------------------
   .done:
     popa                                ; restore registers and return
     ret
 
-;**************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Puts32 ()
 ;   - Prints a null terminated string
 ; parm\ EBX = address of string to print
-;**************************************************;
-
+;--------------------------------------------------------------------------------------------------
+[bits 32]
 Puts32:
-    ;-------------------------------;
-    ;   Store registers             ;
-    ;-------------------------------;
-
+    ;----------------
+    ; Store registers
+    ;----------------
     pusha                               ; save registers
     push  ebx                           ; copy the string address
     pop   edi
 
   .loop:
 
-    ;-------------------------------;
-    ;   Get character               ;
-    ;-------------------------------;
-
+    ;--------------
+    ; Get character
+    ;--------------
     mov   bl,byte [edi]                 ; get next character
     cmp   bl,0                          ; is it 0 (Null terminator)?
     je    .done                         ; yep-bail out
 
-    ;-------------------------------;
-    ;   Print the character         ;
-    ;-------------------------------;
+    ;--------------------
+    ; Print the character
+    ;--------------------
+    call  Putch32                       ; Nope-print it out
 
-    call  Putch32                       ; (Routine is local) Nope-print it out
-
     ;-------------------------------;
-    ;   Go to next character        ;
+    ; Go to next character        ;
     ;-------------------------------;
 
     inc   edi                           ; go to next character
@@ -213,35 +174,31 @@ Puts32:
   .done:
 
     ;-------------------------------;
-    ;   Update hardware cursor      ;
+    ; Update hardware cursor      ;
     ;-------------------------------;
-
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
 
     mov   bh,byte [_CurY]               ; get current position
     mov   bl,byte [_CurX]
-    call  MovCur                        ; (Routine is local) update cursor
+    call  MovCur                        ; update cursor
 
     popa                                ; restore registers, and return
     ret
 
-;**************************************************;
+;--------------------------------------------------------------------------------------------------
 ; MoveCur ()
 ;   - Update hardware cursor
 ; parm/ bh = Y pos
 ; parm/ bl = x pos
-;**************************************************;
-
+;--------------------------------------------------------------------------------------------------
 [bits 32]
-
 MovCur:
     pusha                               ; save registers (aren't you getting tired of this comment?)
 
     ;-------------------------------;
     ;   Get current position        ;
     ;-------------------------------;
-
     ; Here, _CurX and _CurY are relitave to the current position on screen, not in memory.
     ; That is, we don't need to worry about the byte alignment we do when displaying characters,
     ; so just follow the forumla: location = _CurX + _CurY * COLS
@@ -256,27 +213,25 @@ MovCur:
     ;--------------------------------------;
     ;   Set low byte index to VGA register ;
     ;--------------------------------------;
-
-    mov   al,0x0f
-    mov   dx,0x03D4
+    mov   al,0Fh
+    mov   dx,03D4h
     out   dx,al
 
     mov   al,bl
-    mov   dx,0x03D5
+    mov   dx,03D5h
     out   dx,al                         ; low byte
 
     ;---------------------------------------;
     ;   Set high byte index to VGA register ;
     ;---------------------------------------;
-
     xor   eax,eax
 
-    mov   al,0x0e
-    mov   dx,0x03D4
+    mov   al,0Eh
+    mov   dx,03D4h
     out   dx,al
 
     mov   al,bh
-    mov   dx,0x03D5
+    mov   dx,03D5h
     out   dx,al                         ; high byte
 
     popa
@@ -286,9 +241,7 @@ MovCur:
 ; ClrScr32 ()
 ;   - Clears screen
 ;**************************************************;
-
 [bits 32]
-
 ClrScr32:
     pusha
     cld
@@ -308,9 +261,7 @@ ClrScr32:
 ; parm\ AL=X position
 ; parm\ AH=Y position
 ;**************************************************;
-
 [bits 32]
-
 GotoXY:
     pusha
     mov [_CurX],al                      ; just set the current position
@@ -318,38 +269,11 @@ GotoXY:
     popa
     ret
 
-%endif ;__STDIO_INC_67343546FDCC56AAB872_INCLUDED__
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end of %include "stdio.inc"                    ; basic i/o routines
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "Gdt.inc"                      ; Gdt routines
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;**********************************************************
-;	Gdt.inc
-;		GDT Routines
-;
-;   Included in Stage2.asm
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef __GDT_INC_67343546FDCC56AAB872_INCLUDED__
-%define __GDT_INC_67343546FDCC56AAB872_INCLUDED__
-
-[bits 16]
-
 ;*******************************************
 ; Install our GDT
 ;*******************************************
-
-InstallGDT:                             ; <------------------------------------------------------->
+[bits 16]
+InstallGDT:
     cli                                 ; clear interrupts
     pusha                               ; save registers
     lgdt  [toc]                         ; load GDT into GDTR
@@ -360,72 +284,47 @@ InstallGDT:                             ; <-------------------------------------
 ;*******************************************
 ; Global Descriptor Table (GDT)
 ;*******************************************
-
 gdt_data:                               ; Only referenced in this module
     dd    0                             ; null descriptor
     dd    0
 
 ; gdt code:                             ; code descriptor
-    dw  0FFFFh                          ; limit low
-    dw  0                               ; base low
-    db  0                               ; base middle
-    db  10011010b                       ; access
-    db  11001111b                       ; granularity
-    db  0                               ; base high
+    dw    0FFFFh                        ;limit low
+    dw    0                             ;base low
+    db    0                             ;base middle
+    db    10011010b                     ;access
+    db    11001111b                     ;granularity
+    db    0                             ;base high
 
 ; gdt data:                             ; data descriptor
-    dw  0FFFFh                          ; limit low (Same as code)10:56 AM 7/8/2007
-    dw  0                               ; base low
-    db  0                               ; base middle
-    db  10010010b                       ; access
-    db  11001111b                       ; granularity
-    db  0                               ; base high
+    dw    0FFFFh                        ; limit low (Same as code)10:56 AM 7/8/2007
+    dw    0                             ; base low
+    db    0                             ; base middle
+    db    10010010b                     ; access
+    db    11001111b                     ; granularity
+    db    0                             ; base high
 
 end_of_gdt:                             ; Only referenced in this module
 toc:
-    dw end_of_gdt - gdt_data - 1        ; limit (Size of GDT)
-    dd gdt_data                         ; base of GDT
+    dw    end_of_gdt - gdt_data - 1     ; limit (Size of GDT)
+    dd    gdt_data                      ; base of GDT
 
+;----------------------------------
 ; give the descriptor offsets names
+; ---------------------------------
+NULL_DESC EQU 0
+CODE_DESC EQU 8h
+DATA_DESC EQU 10h
 
-%define NULL_DESC 0
-%define CODE_DESC 0x8
-%define DATA_DESC 0x10
 
-%endif ;__GDT_INC_67343546FDCC56AAB872_INCLUDED__
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end of %include "Gdt.inc"                      ; Gdt routines
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "A20.inc"                      ; A20 enabling
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;**********************************************************
-;	A20.inc
-;		Enable A20 address line
-;
-;   Included in Stage2.asm
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef __A20_INC_67343546FDCC56AAB872_INCLUDED__
-%define __A20_INC_67343546FDCC56AAB872_INCLUDED__
-
-[bits 16]
-
-;--------------------------------------------
+;--------------------------------------------------------------------------------------------------
 ; Enables a20 line through output port
-;--------------------------------------------
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 EnableA20_KKbrd_Out:
     cli                                 ; disable interrupts
     pusha
-  
+
     call  wait_input                    ; wait for keypress
     mov   al,0xAD
     out   0x64,al                       ; disable keyboard
@@ -457,7 +356,6 @@ EnableA20_KKbrd_Out:
     ret
 
 ; wait for input buffer to be clear
-
 wait_input:
     in    al,0x64
     test  al,2
@@ -465,91 +363,17 @@ wait_input:
     ret
 
 ; wait for output buffer to be clear
-
 wait_output:
     in    al,0x64
     test  al,1
     jz    wait_output
     ret
 
-%endif
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end of %include "A20.inc"                      ; A20 enabling
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "Fat12.inc"                    ; FAT12 driver. Kinda :)
-;------------------------------------------------------------------------------------------------------------------------------------------
-;**********************************************************
-;	Fat12.inc
-;		FAT12 filesystem for 3-1/2 floppies
-;
-;   Included in Stage2.asm
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef __FAT12_INC_67343546FDCC56AAB872_INCLUDED__
-%define __FAT12_INC_67343546FDCC56AAB872_INCLUDED__
-
-[bits 16]
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "Floppy16.inc"                 ; the erm.. floppy driver
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;**********************************************************
-;	Floppy16.inc
-;		Floppy drive interface routines
-;
-;   Included in FAT12.inc
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef __FLOPPY16_INC_67343546FDCC56AAB872_INCLUDED__
-%define __FLOPPY16_INC_67343546FDCC56AAB872_INCLUDED__
-
-[bits 16]
-
-OEM                db "My OS   "
-BytesPerSector:    DW 512
-SectorsPerCluster: DB 1
-ReservedSectors:   DW 1
-NumberOfFATs:      DB 2
-RootEntries:       DW 224
-TotalSectors:      DW 2880
-Media:             DB 0xf0           ;; 0xF1
-SectorsPerFAT:     DW 9
-SectorsPerTrack:   DW 18
-HeadsPerCylinder:  DW 2
-HiddenSectors:     DD 0
-TotalSectorsBig:   DD 0
-DriveNumber:        DB 0
-Unused:             DB 0
-ExtBootSignature:   DB 0x29
-SerialNumber:       DD 0xa0a1a2a3
-VolumeLabel:        DB "MOS FLOPPY "
-FileSystem:         DB "FAT12   "
-
-DataSector            dw 0x0000
-Cluster              dw 0x0000
-
-AbsoluteSector        db 0x00
-AbsoluteHead          db 0x00
-AbsoluteTrack         db 0x00
-
-;************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Convert CHS to LBA
 ; LBA = (cluster - 2) * sectors per cluster
-;************************************************;
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 ClusterLBA:                             ;
     sub   ax,0x0002                     ; zero base cluster number
     xor   cx,cx
@@ -558,15 +382,15 @@ ClusterLBA:                             ;
     add   ax,WORD [DataSector]          ; base data sector
     ret
 
-;************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Convert LBA to CHS
 ; AX=>LBA Address to convert
 ;
 ; absolute sector = (logical sector / sectors per track) + 1
 ; absolute head   = (logical sector / sectors per track) MOD number of heads
 ; absolute track  = logical sector / (sectors per track * number of heads)
-;
-;************************************************;
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 LBACHS:                                 ;
     xor   dx,dx                         ; prepare dx:ax for operation
     div   WORD [SectorsPerTrack]        ; calculate
@@ -578,20 +402,21 @@ LBACHS:                                 ;
     mov   BYTE [AbsoluteTrack],al
     ret
 
-;************************************************;
+;--------------------------------------------------------------------------------------------------
 ; Reads a series of sectors
 ; CX=>Number of sectors to read
 ; AX=>Starting sector
 ; ES:EBX=>Buffer to read to
-;************************************************;
-ReadSectors:                            ; Fat12.inc (53,83,180)
+;--------------------------------------------------------------------------------------------------
+[bits 16]
+ReadSectors:
   .MAIN:
     mov   di,0x0005                     ; five retries for error
   .SECTORLOOP:
     push  ax
     push  bx
     push  cx
-    call  LBACHS                        ; (Routine is local) convert starting sector to CHS
+    call  LBACHS                        ; convert starting sector to CHS
     mov   ah,0x02                       ; BIOS read sector
     mov   al,0x01                       ; read one sector
     mov   ch,BYTE [AbsoluteTrack]       ; track
@@ -617,25 +442,15 @@ ReadSectors:                            ; Fat12.inc (53,83,180)
     loop  .MAIN                         ; read next sector
     ret
 
-%endif    ;__FLOPPY16_INC_67343546FDCC56AAB872_INCLUDED__
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end Floppy16.inc
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-%define ROOT_OFFSET 0x2e00              ; Local
-%define FAT_SEG     0x2c0               ; Local
-%define ROOT_SEG    0x2e0               ; Local
-
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 ; Load Root Directory Table to 0x7e00
-;*******************************************
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 LoadRoot:
     pusha                               ; store registers
     push  es
 
     ; compute size of root directory and store in "cx"
-
     xor   cx,cx                         ; clear registers
     xor   dx,dx
     mov   ax,32                         ; 32 byte directory entry
@@ -644,7 +459,6 @@ LoadRoot:
     xchg  ax,cx                         ; move into AX
 
     ; compute location of root directory and store in "ax"
-
     mov   al,BYTE [NumberOfFATs]        ; number of FATs
     mul   WORD [SectorsPerFAT]          ; sectors used by FATs
     add   ax,WORD [ReservedSectors]
@@ -652,51 +466,48 @@ LoadRoot:
     add   WORD [DataSector],cx
 
     ; read root directory into 0x7e00
-
     push  word ROOT_SEG
     pop   es
     mov   bx, 0                         ; copy root dir
-    call  ReadSectors                   ; (Routine is in Floppy16.inc) read in directory table
+    call  ReadSectors                   ; read in directory table
     pop   es
     popa                                ; restore registers and return
     ret
 
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 ; Loads FAT table to 0x7c00
 ;
 ; Parm/ ES:DI => Root Directory Table
-;*******************************************
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 LoadFAT:
     pusha                               ; store registers
     push  es
 
     ; compute size of FAT and store in "cx"
-
     xor   ax,ax
     mov   al,BYTE [NumberOfFATs]        ; number of FATs
     mul   WORD [SectorsPerFAT]          ; sectors used by FATs
     mov   cx,ax
 
     ; compute location of FAT and store in "ax"
-
     mov   ax,WORD [ReservedSectors]
 
     ; read FAT into memory (Overwrite our bootloader at 0x7c00)
-
     push  word FAT_SEG
     pop   es
     xor   bx, bx
-    call  ReadSectors                   ; (Routine is in Flopppy16.inc)
+    call  ReadSectors
     pop   es
     popa                                ; restore registers and return
     ret
 
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 ; Search for filename in root table
-;
 ; parm/ DS:SI => File name
 ; ret/ AX => File index number in directory table. -1 if error
-;*******************************************
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 FindFile:
     push  cx                            ; store registers
     push  dx
@@ -735,21 +546,22 @@ FindFile:
     pop   cx
     ret
 
-;*******************************************
+;--------------------------------------------------------------------------------------------------
 ; Load file
 ; parm/ ES:SI => File to load
 ; parm/ EBX:BP => Buffer to load file to
 ; ret/ AX => -1 on error, 0 on success
 ; ret/ CX => number of sectors read
-;*******************************************
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 LoadFile:
-    xor ecx,ecx                         ; size of file in sectors
+    xor   ecx,ecx                       ; size of file in sectors
     push  ecx
 
   .FIND_FILE:
     push  bx                            ; BX=>BP points to buffer to write to; store it for later
     push  bp
-    call  FindFile                      ; (Routine is local) find our file. ES:SI contains our filename
+    call  FindFile                      ; find our file. ES:SI contains our filename
     cmp   ax,-1
     jne   .LOAD_IMAGE_PRE
     pop   bp
@@ -759,11 +571,10 @@ LoadFile:
     ret
 
   .LOAD_IMAGE_PRE:
-    sub edi,ROOT_OFFSET
-    sub eax,ROOT_OFFSET
+    sub   edi,ROOT_OFFSET
+    sub   eax,ROOT_OFFSET
 
     ; get starting cluster
-
     push  word ROOT_SEG                 ;root segment loc
     pop   es
     mov   dx,WORD [es:di + 0x001A]      ; DI points to file entry in root directory table. Refrence the table...
@@ -772,18 +583,17 @@ LoadFile:
     pop   es
     push  bx                            ; store location for later again
     push  es
-    call  LoadFAT                       ; (Routine is local)
+    call  LoadFAT
 
   .LOAD_IMAGE:
     ; load the cluster
-
     mov   ax,WORD [Cluster]             ; cluster to read
     pop   es                            ; bx:bp=es:bx
     pop   bx
-    call  ClusterLBA                    ; (Routine is in Floppy16.inc)
+    call  ClusterLBA
     xor   cx,cx
     mov   cl,BYTE [SectorsPerCluster]
-    call  ReadSectors                   ; (Routine is in Floppy16.inc)
+    call  ReadSectors
     pop   ecx
     inc   ecx                           ; add one more sector to counter
     push  ecx
@@ -794,7 +604,6 @@ LoadFile:
     xor   bx,bx
 
   ; get next cluster
-
     mov   ax,WORD [Cluster]             ; identify current cluster
     mov   cx,ax                         ; copy current cluster
     mov   dx,ax
@@ -812,7 +621,7 @@ LoadFile:
     jmp   .DONE
 
   .ODD_CLUSTER:
-    shr dx,0x0004                       ; take high 12 bits
+    shr   dx,0x0004                     ; take high 12 bits
 
   .DONE:
     mov   WORD [Cluster],dx
@@ -826,162 +635,115 @@ LoadFile:
     xor   ax,ax
     ret
 
-%endif    ;__FAT12_INC_67343546FDCC56AAB872_INCLUDED__
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end of %include "Fat12.inc"                    ; FAT12 driver. Kinda :)
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-;%include "Common.inc"                   ; Some constants
-;------------------------------------------------------------------------------------------------------------------------------------------
-;**********************************************************
-;	Common.inc                            
-;		Common Code
-;
-;   Included in Stage2.asm
-;
-; Broken Thorn Entertainment
-; Operating Systems Development Tutorial
-; http://www.brokenthorn.com/Resources/OSDevIndex.html
-;
-;**********************************************************
-
-%ifndef _COMMON_INC_INCLUDED
-%define _COMMON_INC_INCLUDED
-
-; where the kernel is to be loaded to in protected mode
-%define IMAGE_PMODE_BASE 0x100000
-
-; where the kernel is to be loaded to in real mode
-%define IMAGE_RMODE_BASE 0x3000
-
-; kernel name (Must be 11 bytes)
-ImageName     db "STAGE3  BIN"
-
-; size of kernel image in bytes
-ImageSize     db 0
-
-%endif
-
-;------------------------------------------------------------------------------------------------------------------------------------------
-; end of %include "Common.inc"                   ; Some constants
-;------------------------------------------------------------------------------------------------------------------------------------------
-
-;*******************************************************
-; Data Section
-;*******************************************************
-
-LoadingMsg db 0x0D, 0x0A, "Searching for Operating System v7...", 0x00
-FailureMsg db 0x0D, 0x0A, "*** FATAL: MISSING OR CURRUPT STAGE3.BIN. Press Any Key to Reboot", 0x0D, 0x0A, 0x0A, 0x00
-
-;*******************************************************
+;--------------------------------------------------------------------------------------------------
 ; STAGE 2 ENTRY POINT
-;
 ;   -Store BIOS information
 ;   -Load Kernel
 ;   -Install GDT; go into protected mode (pmode)
 ;   -Jump to Stage 3
-;*******************************************************
-
+;--------------------------------------------------------------------------------------------------
+[bits 16]
 main:
-    ;-------------------------------;
-    ;   Setup segments and stack  ;
-    ;-------------------------------;
+    ;----------------------------
+    ; Set Data Segement registers
+    ;----------------------------
+    cli                                 ; disable interrupts
+    xor   ax,ax                         ; null segments
+    mov   ds,ax
+    mov   es,ax
 
-    cli                                 ; clear interrupts
-    xor ax,ax                           ; null segments
-    mov ds,ax
-    mov es,ax
-    mov ax,0x0                          ; stack begins at 0x9000-0xffff
-    mov ss,ax
-    mov sp,0xFFFF
+    ;-----------------
+    ; Set up our Stack
+    ;-----------------
+    mov   ax,0x0                        ; stack begins at 0x9000-0xffff
+    mov   ss,ax
+    mov   sp,0xFFFF
     sti                                 ; enable interrupts
 
-    ;-------------------------------;
-    ;   Install our GDT   ;
-    ;-------------------------------;
-
+    ;----------------
+    ; Install our GDT
+    ;----------------
     call  InstallGDT
 
-    ;-------------------------------;
-    ;   Enable A20      ;
-    ;-------------------------------;
-
+    ;-----------
+    ; Enable A20
+    ;-----------
     call  EnableA20_KKbrd_Out
 
-    ;-------------------------------;
-    ;   Print loading message ;
-    ;-------------------------------;
-
-    mov si,LoadingMsg
+    ;----------------------
+    ; Print loading message
+    ;----------------------
+    mov   si,LoadingMsg
     call  Puts16
-    mov   ah,0x00
-    int   0x16                          ; await keypress
+    mov   ah,0x00                       ; wait
+    int   0x16                          ;  for keypress
 
-    ;-------------------------------;
-    ; Initialize filesystem   ;
-    ;-------------------------------;
+    ;----------------------
+    ; Initialize filesystem
+    ;----------------------
+    call  LoadRoot                      ; Load root directory table
 
-    call  LoadRoot                      ; (Routine is in Fat12.inc) Load root directory table
-
-    ;-------------------------------;
-    ; Load Kernel     ;
-    ;-------------------------------;
-
+    ;----------------------
+    ; Read Kernel from disk
+    ;----------------------
     mov   ebx,0                         ; BX:BP points to buffer to load to
     mov   bp,IMAGE_RMODE_BASE
     mov   si,ImageName                  ; our file to load
-    call  LoadFile                      ;
+    call  LoadFile
     mov   dword [ImageSize],ecx         ; save size of kernel
     cmp   ax,0                          ; Test for success
-    je    EnterStage3                   ; yep--onto Stage 3!
+    je    GoProtected                   ; yep--onto Stage 3!
+
+    ;------------------
+    ; This is very bad!
+    ;------------------
     mov   si,FailureMsg                 ; Nope--print error
     call  Puts16                        ;
-    mov   ah,0
-    int   0x16                          ; await keypress
+    mov   ah,0                          ; wait
+    int   0x16                          ;  for keypress
     int   0x19                          ; warm boot computer
-    cli                                 ; If we get here, something really went wong
+    cli                                 ; If we get here, something really went wrong
     hlt
 
-  ;-------------------------------;
-  ;   Go into pmode   ;
-  ;-------------------------------;
-
-EnterStage3:
+GoProtected:
+    ;--------------
+    ; Go into pmode
+    ;--------------
     cli                                 ; clear interrupts
-    mov eax,cr0                         ; set bit 0 in cr0--enter pmode
-    or  eax,1
-    mov cr0,eax
+    mov   eax,cr0                       ; set bit 0 in cr0--enter pmode
+    or    eax,1
+    mov   cr0,eax
 
-    jmp CODE_DESC:Stage3                ; far jump to fix CS. Remember that the code selector is 0x8!
+    jmp   CODE_DESC:GoStage3            ; far jump to fix CS. Remember that the code selector is 0x8!
 
   ; Note: Do NOT re-enable interrupts! Doing so will triple fault!
   ; We will fix this in Stage 3.
 
 ;******************************************************
-; ENTRY POINT FOR STAGE 3
+; Get to Stage3 - Our Kernel!
+; - Set Data Segment Register
+; - Set up our Stack
+; - Copy Kernel to address 1 MB
+; - Jump to our Kernel!!
 ;******************************************************
-
 [bits 32]
+GoStage3:
+    ;----------------------------
+    ; Set Data Segement registers
+    ;----------------------------
+    mov   ax,DATA_DESC                  ; set data segments to data selector (0x10)
+    mov   ds,ax
+    mov   ss,ax
+    mov   es,ax
 
-Stage3:
+    ;-----------------
+    ; Set up our Stack
+    ;-----------------
+    mov   esp,90000h                    ; stack begins from 90000h
 
-    ;-------------------------------;
-    ;   Set registers   ;
-    ;-------------------------------;
-
-    mov ax,DATA_DESC                    ; set data segments to data selector (0x10)
-    mov ds,ax
-    mov ss,ax
-    mov es,ax
-    mov esp,90000h                      ; stack begins from 90000h
-
-    ;-------------------------------;
-    ; Copy kernel to 1MB    ;
-    ;-------------------------------;
-
-CopyImage:
+    ;-------------------
+    ; Copy kernel to 1MB
+    ;-------------------
     mov   eax,dword [ImageSize]
     movzx ebx,word [BytesPerSector]
     mul   ebx
@@ -993,15 +755,53 @@ CopyImage:
     mov   ecx,eax
     rep   movsd                         ; copy image to its protected mode address
 
-    ;---------------------------------------;
-    ;   Execute Kernel      ;
-    ;---------------------------------------;
-
+    ;--------------------
+    ; Jump to our Kernel!
+    ;--------------------
     jmp   CODE_DESC:IMAGE_PMODE_BASE    ; jump to our kernel! Note: This assumes Kernel's entry point is at 1 MB
 
-    ;---------------------------------------;
-    ;   Stop execution      ;
-    ;---------------------------------------;
-
+    ;-----------------
+    ;   Stop execution
+    ;-----------------
     cli
     hlt
+
+;--------------------------------------------------------------------------------------------------
+; Working Storage
+;--------------------------------------------------------------------------------------------------
+FAT_SEG           EQU 2C0h
+IMAGE_PMODE_BASE  EQU 100000h           ; where the kernel is to be loaded to in protected mode
+IMAGE_RMODE_BASE  EQU 3000h             ; where the kernel is to be loaded to in real mode
+ROOT_OFFSET       EQU 2E00h
+ROOT_SEG          EQU 2E0h
+
+LoadingMsg        DB  0Dh
+                  DB  0Ah
+                  DB  "Searching for Operating System v8.7.."
+                  DB  00h
+
+FailureMsg        DB  0Dh
+                  DB  0Ah
+                  DB  "*** FATAL: MISSING OR CURRUPT STAGE3.BIN. Press Any Key to Reboot"
+                  DB  0Dh
+                  DB  0Ah
+                  DB  0Ah
+                  DB  00h
+
+
+AbsoluteHead      DB  00h
+AbsoluteSector    DB  00h
+AbsoluteTrack     DB  00h
+BytesPerSector    DW  512
+Cluster           DW  0000h
+DataSector        DW  0000h
+DriveNumber       DB  0
+HeadsPerCylinder  DW  2
+ImageName         DB  "STAGE3  BIN"      ; kernel name (Must be 11 bytes)
+ImageSize         DB  0                  ; size of kernel image in bytes
+NumberOfFATs      DB  2
+ReservedSectors   DW  1
+RootEntries       DW  224
+SectorsPerCluster DB  1
+SectorsPerFAT     DW  9
+SectorsPerTrack   DW  18
