@@ -166,10 +166,8 @@ Booter:
     ;-------------------------
     ;- Display loading message
     ;-------------------------
-    MOV   SI,LoadingMsg                 ; si points to first byte in msgLoading
+    MOV   SI,LoadingMsg                 ; si points to first byte in message
     CALL  Print                         ; print message
-    MOV   AH,0X00                       ; wait
-    INT   0x16                          ;  for keypress
 
     ;--------------------------
     ; Load root directory table 
@@ -182,20 +180,18 @@ Booter:
     MUL   WORD [RootEntries]            ; total size of directory
     DIV   WORD [BytesPerSector]         ; sectors used by directory
     XCHG  AX,CX                         ; swap ax cx
-
     ; compute location of root directory and store in "ax"
     MOV   AL,BYTE [NumberOfFATs]        ; number of FATs
     MUL   WORD [SectorsPerFAT]          ; sectors used by FATs
     ADD   AX,WORD [ReservedSectors]     ; adjust for bootsector
     MOV   WORD [DataSector],AX          ; base of root directory
     ADD   WORD [DataSector],CX
-
     ; read root directory into memory (7C00:0200)
     MOV   BX,0x0200                     ; read root dir
     CALL  ReadSector                    ;  above bootcode
 
     ;-------------------------------
-    ; Find stage 2 in Root Directory
+    ; Find Stage 2 in Root Directory
     ; Tutorial 6: Bootloaders 4
     ;-------------------------------
     MOV   CX,WORD [RootEntries]         ; load loop counter
@@ -278,6 +274,13 @@ LoadStage2CheckDone:
     CMP   DX,0x0FF0                     ; If DX is less than EOF (0x0FF0)
     JB    LoadStage2                    ;   then keep going (JB = Jump Below)
 
+;--------------------------------------------------------------------------------------------------
+; Jump to Stage 2 code
+;--------------------------------------------------------------------------------------------------
+    MOV   SI,Stage2Msg                  ; si points to first byte in message
+    CALL  Print                         ; print message
+    MOV   AH,0X00                       ; wait
+    INT   0x16                          ;  for keypress
     MOV   SI,NewLineMsg                 ; print
     CALL  Print                         ;  new line
     PUSH  WORD 0x0050                   ; Jump to our Stage2 code that we put at 0050:0000
@@ -302,10 +305,11 @@ FindFatFailed:
     AbsoluteTrack   DB 0x00
     Cluster         DW 0x0000
     DataSector      DW 0x0000
-    FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2. Press Any Key to Reboot", 0x0D, 0x0A, 0x00
-    LoadingMsg      DB 0x0D, 0x0A, "Loading Boot Image v1 ", 0x00
+    FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2", 0x0D, 0x0A, 0x00
+    LoadingMsg      DB 0x0D, 0x0A, "MyOs Stage 1 v1 ", 0x00
     NewLineMsg      DB 0x0D, 0x0A, 0x00
     ProgressMsg     DB ".", 0x00
+    Stage2Msg       DB 0x0D, 0x0A, " Hit Enter to Jump to Stage 2 ", 0x00
     Stage2Name      DB "STAGE2  BIN"
 
 ;--------------------------------------------------------------------------------------------------

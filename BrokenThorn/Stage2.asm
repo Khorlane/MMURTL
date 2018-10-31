@@ -13,7 +13,7 @@
 ; We are loaded at 500h (50h:0h)
 [bits 16]
     ORG   0500h
-    JMP   Main                          ; go to start
+    JMP   Main                          ; jump to Main
 
 ;--------------------------------------------------------------------------------------------------
 ; Prints a null terminated string
@@ -22,11 +22,11 @@
 [bits 16]
 PutStr:
     PUSHA                               ; save registers
+    MOV   AH,0Eh                        ; Nope-Print the character
 PutStr1:
     LODSB                               ; load next byte from string from SI to AL
     OR    AL,AL                         ; Does AL=0?
     JZ    PutStr2                       ; Yep, null terminator found-bail out
-    MOV   AH,0Eh                        ; Nope-Print the character
     INT   10h                           ; invoke BIOS
     JMP   PutStr1                       ; Repeat until null terminator found
 PutStr2:
@@ -292,7 +292,7 @@ LoadFile1:
     SUB   EDI,RootOffset
     SUB   EAX,RootOffset
     ; get starting cluster
-    PUSH  WORD RootSegment                 ;root segment loc
+    PUSH  WORD RootSegment              ; root segment loc
     POP   ES
     MOV   DX,WORD [ES:DI + 0001Ah]      ; DI points to file entry in root directory table. Refrence the table...
     MOV   WORD [Cluster],DX             ; file's first cluster
@@ -315,7 +315,7 @@ LoadFile2:
     PUSH  ECX
     PUSH  BX
     PUSH  ES
-    MOV   AX,FatSegment                    ;start reading from fat
+    MOV   AX,FatSegment                 ;start reading from fat
     MOV   ES,AX
     XOR   BX,BX
     ; get next cluster
@@ -385,8 +385,6 @@ Main:
     ;----------------------
     MOV   SI,LoadingMsg
     CALL  PutStr
-    MOV   ah,00h                        ; wait
-    INT   16h                           ;  for keypress
 
     ;----------------------
     ; Initialize filesystem
@@ -394,13 +392,13 @@ Main:
     CALL  LoadRootDir                   ; Load root directory table
 
     ;----------------------
-    ; Read Kernel from disk
+    ; Read Stage3 from disk
     ;----------------------
     MOV   EBX,0                         ; BX:BP points to buffer to load to
     MOV   BP,RModeBase
-    MOV   SI,ImageName                  ; our file to load
+    MOV   SI,Stage3Name                 ; our file to load
     CALL  LoadFile
-    MOV   DWORD [ImageSize],ECX         ; save size of kernel
+    MOV   DWORD [Stage3Size],ECX        ; save the size of Stage3
     CMP   AX,0                          ; Test for success
     JE    GoProtected                   ; yep--onto Stage 3!
 
@@ -416,6 +414,10 @@ Main:
     HLT
 
 GoProtected:
+    MOV   SI,Stage3Msg
+    CALL  PutStr
+    MOV   ah,00h                        ; wait
+    INT   16h                           ;  for keypress
     ;--------------
     ; Go into pmode
     ;--------------
@@ -453,7 +455,7 @@ GoStage3:
     ;-------------------
     ; Copy kernel to 1MB
     ;-------------------
-    MOV   EAX,DWORD [ImageSize]
+    MOV   EAX,DWORD [Stage3Size]
     MOVZX EBX,WORD [BytesPerSector]
     MUL   EBX
     MOV   EBX,4
@@ -524,7 +526,12 @@ RootSegment       EQU 2E0h
 
 LoadingMsg        DB  0Dh
                   DB  0Ah
-                  DB  "Searching for Operating System v2..."
+                  DB  "MyOs Stage 2 v1"
+                  DB  00h
+
+Stage3Msg         DB  0Dh
+                  DB  0Ah
+                  DB  " Hit Enter to Jump to Stage 3"
                   DB  00h
 
 FailureMsg        DB  0Dh
@@ -544,8 +551,8 @@ Cluster           DW  0000h
 DataSector        DW  0000h
 DriveNumber       DB  0
 HeadsPerCylinder  DW  2
-ImageName         DB  "STAGE3  BIN"      ; kernel name (Must be 11 bytes)
-ImageSize         DB  0                  ; size of kernel image in bytes
+Stage3Name        DB  "STAGE3  BIN"      ; kernel name (Must be 11 bytes)
+Stage3Size        DB  0                  ; size of kernel image in bytes
 NumberOfFATs      DB  2
 ReservedSectors   DW  1
 RootEntries       DW  224

@@ -212,8 +212,8 @@ ClrScr32:
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
 ;--------------------------------------------------------------------------------------------------
-msg db  0x0A, 0x0A, "                     - OS Development Series v1 -"
-    db  0x0A, 0x0A, "                     MYOS 32 Bit Kernel Executing", 0x0A, 0
+Msg db  0x0A, 0x0A, "                     ------    My Os v1     -----"
+    db  0x0A, 0x0A, "                     ------  32 Bit Kernel  -----", 0x0A, 0
 
 Stage3:
     ;--------------
@@ -229,7 +229,7 @@ Stage3:
     ; Clear screen and print success
     ;-------------------------------
     call  ClrScr32               
-    mov   ebx,msg
+    mov   ebx,Msg
     call  Puts32  
 
     ;---------------
