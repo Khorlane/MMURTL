@@ -226,7 +226,7 @@ Stage3:
 ;--------------------------------------------------------------------------------------------------
 Msg         DB  0x0A                    ; Newline
             DB  0x0A                    ; Newline
-            DB  "                     ------    My Os v1     -----"
+            DB  "                     ------   MyOs v0.1.1   -----"
             DB  0x0A                    ; Newline
             DB  0x0A                    ; Newline
             DB  "                     ------  32 Bit Kernel  -----"

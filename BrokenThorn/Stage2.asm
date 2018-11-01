@@ -526,7 +526,7 @@ RootSegment       EQU 2E0h
 
 LoadingMsg        DB  0Dh
                   DB  0Ah
-                  DB  "MyOs Stage 2 v1"
+                  DB  "MyOs v0.1.1 Stage 2"
                   DB  00h
 
 Stage3Msg         DB  0Dh

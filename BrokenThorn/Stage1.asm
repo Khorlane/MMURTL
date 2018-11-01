@@ -32,7 +32,7 @@
 ; See Wikipedia "Design of the FAT file system" for more info on the BIOS Parameter Block
 
                                         ; Hex Offset from beginning of Boot Sector
-OEM                   DB "My OS   "     ; 0x003  8 bytes padded with spaces
+OEM                   DB "MyOs    "     ; 0x003  8 bytes padded with spaces
 BytesPerSector        DW 512            ; 0x00B  2 bytes
 SectorsPerCluster     DB 1              ; 0x00D  1 byte
 ReservedSectors       DW 1              ; 0x00E  2 bytes
@@ -306,7 +306,7 @@ FindFatFailed:
     Cluster         DW 0x0000
     DataSector      DW 0x0000
     FailureMsg      DB 0x0D, 0x0A, "MISSING OR CURRUPT STAGE2", 0x0D, 0x0A, 0x00
-    LoadingMsg      DB 0x0D, 0x0A, "MyOs Stage 1 v1 ", 0x00
+    LoadingMsg      DB 0x0D, 0x0A, "MyOs v0.1.1 Stage 1", 0x00
     NewLineMsg      DB 0x0D, 0x0A, 0x00
     ProgressMsg     DB ".", 0x00
     Stage2Msg       DB 0x0D, 0x0A, " Hit Enter to Jump to Stage 2 ", 0x00
