@@ -10,8 +10,8 @@
 ;**********************************************************
 
 [bits  32]                              ; 32 bit code
-    org   100000h                       ; Kernel starts at 1 MB
-    jmp   Stage3                        ; jump to entry point
+    ORG   100000h                       ; Kernel starts at 1 MB
+    JMP   Stage3                        ; jump to entry point
 
 ;--------------------------------------------------------------------------------------------------
 ; 32 bit Video Routines
@@ -30,14 +30,14 @@ _CurY       DB  0
 ; BL = Character to print
 ;----------------------------
 [bits 32]
-PutCh32:
-    pusha                               ; save registers
-    mov   edi,VIDMEM                    ; get pointer to video memory
+PutCh:
+    PUSHA                               ; save registers
+    MOV   EDI,VIDMEM                    ; get pointer to video memory
 
     ;---------------------
     ; Get current position
     ;---------------------
-    xor   eax,eax                       ; clear eax
+    XOR   EAX,EAX                       ; clear eax
 
     ;----------------------------------------------------
     ; Remember: currentPos = x + y * COLS!
@@ -48,10 +48,10 @@ PutCh32:
     ; of bytes per line. This is the screen width,
     ; so multiply screen with * _CurY to get current line
     ;----------------------------------------------------
-    mov   ecx,COLS*2                    ; Mode 7 has 2 bytes per char, so its COLS*2 bytes per line
-    mov   al,byte [_CurY]               ; get y pos
-    mul   ecx                           ; multiply y*COLS
-    push  eax                           ; save eax--the multiplication
+    MOV   ECX,COLS*2                    ; Mode 7 has 2 bytes per char, so its COLS*2 bytes per line
+    MOV   AL,BYTE [_CurY]               ; get y pos
+    MUL   ECX                           ; multiply y*COLS
+    PUSH  EAX                           ; save eax--the multiplication
 
     ;-------------------------------------
     ; Now y * screen width is in eax.
@@ -63,11 +63,11 @@ PutCh32:
     ; have to multiply _CurX by 2 first,
     ; then add it to our screen width * y.
     ;-------------------------------------
-    mov   al,byte [_CurX]               ; multiply _CurX by 2 because it is 2 bytes per char
-    mov   cl,2
-    mul   cl
-    pop   ecx                           ; pop y*COLS result
-    add   eax,ecx
+    MOV   AL,BYTE [_CurX]               ; multiply _CurX by 2 because it is 2 bytes per char
+    MOV   CL,2
+    MUL   CL
+    POP   ECX                           ; pop y*COLS result
+    ADD   EAX,ECX
 
     ;------------------------------------
     ; Now eax contains the offset address
@@ -75,79 +75,79 @@ PutCh32:
     ; add it to the base address
     ; of video memory (Stored in edi)
     ;------------------------------------
-    xor ecx,ecx
-    add edi,eax                         ; add it to the base address
+    XOR ECX,ECX
+    ADD EDI,EAX                         ; add it to the base address
 
     ;-------------------
     ; Watch for new line
     ;-------------------
-    cmp   bl,0Ah                        ; is it a newline character?
-    je    .Row                          ; yep--go to next row
+    CMP   BL,0Ah                        ; is it a newline character?
+    JE    PutCh1                          ; yep--go to next row
 
     ;------------------
     ; Print a character
     ;------------------
-    mov   dl,bl                         ; Get character
-    mov   dh,CHAR_ATTRIB                ; the character attribute
-    mov   word [edi],dx                 ; write to video display
+    MOV   DL,BL                         ; Get character
+    MOV   DH,CHAR_ATTRIB                ; the character attribute
+    MOV   WORD [EDI],DX                 ; write to video display
 
     ;---------------------
     ; Update next position
     ;---------------------
-    inc   byte [_CurX]                  ; go to next character
-  ; cmp   byte [_CurX],COLS             ; are we at the end of the line?
-  ; je    .Row                          ; yep-go to next row
-    jmp   .done                         ; nope, bail out
+    INC   BYTE [_CurX]                  ; go to next character
+  ; CMP   BYTE [_CurX],COLS             ; are we at the end of the line?
+  ; JE    PutCh1                        ; yep-go to next row
+    JMP   PutCh2                        ; nope, bail out
 
     ;---------------
     ; Go to next row
     ;---------------
-  .Row:
-    mov byte [_CurX],0                  ; go back to col 0
-    inc byte [_CurY]                    ; go to next row
+  PutCh1:
+    MOV BYTE [_CurX],0                  ; go back to col 0
+    INC BYTE [_CurY]                    ; go to next row
 
     ;---------------------------
     ; Restore registers & return
     ;---------------------------
-  .done:
-    popa                                ; restore registers and return
-    ret
+ PutCh2:
+    POPA                                ; restore registers and return
+    RET
 
 ;---------------------------------
 ; Print a null terminated string
 ; EBX = address of string to print
 ;---------------------------------
 [bits 32]
-Puts32:
+PutStr:
     ; Save registers
-    pusha                               ; save registers
-    push  ebx                           ; copy the string address
-    pop   edi
+    PUSHA                               ; save registers
+    PUSH  EBX                           ; copy the string address
+    POP   EDI
 
-  .loop:
+PutStr1:
     ; Get character
-    mov   bl,byte [edi]                 ; get next character
-    cmp   bl,0                          ; is it 0 (Null terminator)?
-    je    .done                         ; yep-bail out
+    MOV   BL,BYTE [EDI]                 ; get next character
+    CMP   BL,0                          ; is it 0 (Null terminator)?
+    JE    PutStr2                       ; yep-bail out
 
     ; Print the character
-    call  PutCh32                       ; Nope-print it out
+    CALL  PutCh                       ; Nope-print it out
 
     ; Go to next character
-    inc   edi                           ; go to next character
-    jmp   .loop
+    INC   EDI                           ; go to next character
+    JMP   PutStr1
 
-  .done:
+PutStr2:
     ; Update hardware cursor
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
 
-    mov   bh,byte [_CurY]               ; get current position
-    mov   bl,byte [_CurX]
-    call  MovCursor                     ; update cursor
+    MOV   BH,BYTE [_CurY]               ; get current position
+    MOV   BL,BYTE [_CurX]
+    CALL  MovCursor                     ; update cursor
 
-    popa                                ; restore registers, and return
-    ret
+    POPA                                ; restore registers, and return
+    RET
 
 ;-----------------------
 ; Update hardware cursor
@@ -156,84 +156,84 @@ Puts32:
 ;-----------------------
 [bits 32]
 MovCursor:
-    pusha                               ; save registers (aren't you getting tired of this comment?)
+    PUSHA                               ; save registers (aren't you getting tired of this comment?)
 
     ; Get current position
     ; Here, _CurX and _CurY are relitave to the current position on screen, not in memory.
     ; That is, we don't need to worry about the byte alignment we do when displaying characters,
     ; so just follow the forumla: location = _CurX + _CurY * COLS
-    xor   eax,eax
-    mov   ecx,COLS
-    mov   al,bh                         ; get y pos
-    mul   ecx                           ; multiply y*COLS
-    add   al,bl                         ; Now add x
-    mov   ebx,eax
+    XOR   EAX,EAX
+    MOV   ECX,COLS
+    MOV   AL,BH                         ; get y pos
+    MUL   ECX                           ; multiply y*COLS
+    ADD   AL,BL                         ; Now add x
+    MOV   EBX,EAX
 
     ; Set low byte index to VGA register
-    mov   al,0Fh
-    mov   dx,03D4h
-    out   dx,al
+    MOV   AL,0Fh
+    MOV   DX,03D4h
+    OUT   DX,AL
 
-    mov   al,bl
-    mov   dx,03D5h
-    out   dx,al                         ; low byte
+    MOV   AL,BL
+    MOV   DX,03D5h
+    OUT   DX,AL                         ; low byte
 
     ; Set high byte index to VGA register
-    xor   eax,eax
+    XOR   EAX,EAX
 
-    mov   al,0Eh
-    mov   dx,03D4h
-    out   dx,al
+    MOV   AL,0Eh
+    MOV   DX,03D4h
+    OUT   DX,AL
 
-    mov   al,bh
-    mov   dx,03D5h
-    out   dx,al                         ; high byte
+    MOV   AL,BH
+    MOV   DX,03D5h
+    OUT   DX,AL                         ; high byte
 
-    popa
-    ret
+    POPA
+    RET
 
 ;-------------
 ; Clear Screen
 ;-------------
 [bits 32]
 ClrScr32:
-    pusha
-    cld
-    mov   edi,VIDMEM
-    mov   cx,2000
-    mov   ah,CHAR_ATTRIB
-    mov   al,' '
-    rep   stosw
-    mov   byte [_CurX],0
-    mov   byte [_CurY],0
-    popa
-    ret
+    PUSHA
+    CLD
+    MOV   EDI,VIDMEM
+    MOV   CX,2000
+    MOV   AH,CHAR_ATTRIB
+    MOV   AL,' '
+    REP   STOSW
+    MOV   BYTE [_CurX],0
+    MOV   BYTE [_CurY],0
+    POPA
+    RET
 
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
 ;--------------------------------------------------------------------------------------------------
-Msg db  0x0A, 0x0A, "                     ------    My Os v1     -----"
-    db  0x0A, 0x0A, "                     ------  32 Bit Kernel  -----", 0x0A, 0
+Msg DB  0x0A, 0x0A, "                     ------    My Os v2     -----"
+    DB  0x0A, 0x0A, "                     ------  32 Bit Kernel  -----", 0x0A, 0
 
 Stage3:
     ;--------------
     ; Set registers
     ;--------------
-    mov   ax,10h                        ; set data segments to data selector (10h)
-    mov   ds,ax
-    mov   ss,ax
-    mov   es,ax
-    mov   esp,90000h                    ; stack begins from 90000h
+    MOV   AX,10h                        ; set data segments to data selector (10h)
+    MOV   DS,AX
+    MOV   SS,AX
+    MOV   ES,AX
+    MOV   ESP,90000h                    ; stack begins from 90000h
 
     ;-------------------------------
     ; Clear screen and print success
     ;-------------------------------
-    call  ClrScr32               
-    mov   ebx,Msg
-    call  Puts32  
+    CALL  ClrScr32               
+    MOV   EBX,Msg
+    CALL  PutStr  
 
     ;---------------
     ; Stop execution
     ;---------------
-    cli
-    hlt
+    CLI
+    HLT

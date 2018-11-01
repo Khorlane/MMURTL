@@ -342,7 +342,7 @@ LoadFile4:
     POP   BX
     POP   ECX
     XOR   AX,AX
-    ret
+    RET
 
 ;--------------------------------------------------------------------------------------------------
 ; Stage 2 Entry Point
@@ -471,11 +471,11 @@ GoStage3:
     ;--------------------
     JMP   CodeDesc:PModeBase            ; jump to our kernel! Note: This assumes Kernel's entry point is at 1 MB
 
-    ;-----------------
-    ;   Stop execution
-    ;-----------------
-    CLI
-    HLT
+    ;-------------------
+    ; We never get here! 
+    ;-------------------
+    CLI                                 ; Stop 
+    HLT                                 ;  execution
 
 ;--------------------------------------------------------------------------------------------------
 ; Global Descriptor Table (GDT)
