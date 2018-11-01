@@ -66,8 +66,8 @@ PutCh:
     ; add it to the base address
     ; of video memory (Stored in edi)
     ;------------------------------------
-    XOR ECX,ECX
-    ADD EDI,EAX                         ; add it to the base address
+    XOR   ECX,ECX
+    ADD   EDI,EAX                       ; add it to the base address
 
     ;-------------------
     ; Watch for new line
@@ -86,8 +86,6 @@ PutCh:
     ; Update next position
     ;---------------------
     INC   BYTE [CurX]                   ; go to next character
-  ; CMP   BYTE [CurX],Cols              ; are we at the end of the line?
-  ; JE    PutCh1                        ; yep-go to next row
     JMP   PutCh2                        ; nope, bail out
 
     ;---------------
@@ -226,12 +224,17 @@ Stage3:
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
-Msg         DB  0x0A, 0x0A, "                     ------    My Os v1     -----"
-            DB  0x0A, 0x0A, "                     ------  32 Bit Kernel  -----", 0x0A, 0
+Msg         DB  0x0A                    ; Newline
+            DB  0x0A                    ; Newline
+            DB  "                     ------    My Os v1     -----"
+            DB  0x0A                    ; Newline
+            DB  0x0A                    ; Newline
+            DB  "                     ------  32 Bit Kernel  -----"
+            DB  0x0A                    ; Newline
+            DB  0                       ; End of string
 
 ChAttrib    EQU 63                      ; character attribute (White text on light blue background)
 Cols        EQU 80                      ; width and height of screen
-CurX        DB  0                        ; current x/y location
-CurY        DB  0
-Lines       EQU 25                      ; not used
+CurX        DB  0                       ; current x location
+CurY        DB  0                       ; current y location
 VidMem      EQU 0B8000h                 ; video memory
