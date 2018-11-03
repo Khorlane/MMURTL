@@ -212,7 +212,14 @@ Stage3:
     ; Clear screen and print success
     ;-------------------------------
     CALL  ClrSrc
-    MOV   EBX,Msg
+
+    MOV   EBX,[Msg1+Str.Adr]
+    CALL  PutStr
+
+    MOV   EBX,NewLine
+    CALL  PutStr
+
+    MOV   EBX,[Msg2+Str.Adr]
     CALL  PutStr
 
     ;---------------
@@ -224,6 +231,29 @@ Stage3:
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
+struc Str
+  .Len:     RESD  1
+  .Adr:     RESD  1
+endstruc
+
+Msg1:
+  istruc Str
+  at Str.Len, DD Msg1y-Msg1x
+  at Str.Adr, DD Msg1x
+  iend
+  Msg1x:      DB  "------   MyOs v0.1.2   -----",0
+  Msg1y:
+
+Msg2:
+  istruc Str
+  at Str.Len, DD Msg2y-Msg2x
+  at Str.Adr, DD Msg2x
+  iend
+  Msg2x:    DB  "------  32 Bit Kernel  -----"
+  Msg2y:
+
+NewLine     DB  0x0A,0
+
 Msg         DB  0x0A                    ; Newline
             DB  0x0A                    ; Newline
             DB  "                     ------   MyOs v0.1.1   -----"
