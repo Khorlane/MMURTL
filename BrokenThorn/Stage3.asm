@@ -213,13 +213,13 @@ Stage3:
     ;-------------------------------
     CALL  ClrSrc
 
-    MOV   EBX,[Msg1+Str.Adr]
+    MOV   EBX,[Msg1+Str.Ptr]
     CALL  PutStr
 
     MOV   EBX,NewLine
     CALL  PutStr
 
-    MOV   EBX,[Msg2+Str.Adr]
+    MOV   EBX,[Msg2+Str.Ptr]
     CALL  PutStr
 
     ;---------------
@@ -231,15 +231,17 @@ Stage3:
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
+; https://www.nasm.us/doc/nasmdoc4.html
+; 4.11.10 STRUC and ENDSTRUC
 struc Str
   .Len:     RESD  1
-  .Adr:     RESD  1
+  .Ptr:     RESD  1
 endstruc
 
 Msg1:
   istruc Str
   at Str.Len, DD Msg1y-Msg1x
-  at Str.Adr, DD Msg1x
+  at Str.Ptr, DD Msg1x
   iend
   Msg1x:      DB  "------   MyOs v0.1.2   -----",0
   Msg1y:
@@ -247,7 +249,7 @@ Msg1:
 Msg2:
   istruc Str
   at Str.Len, DD Msg2y-Msg2x
-  at Str.Adr, DD Msg2x
+  at Str.Ptr, DD Msg2x
   iend
   Msg2x:    DB  "------  32 Bit Kernel  -----"
   Msg2y:
