@@ -109,23 +109,18 @@ PutCh:
 PutStr:
     ; Save registers
     PUSHA                               ; save registers
-    PUSH  EBX                           ; copy the string address
-    POP   EDI
+    XOR   ECX,ECX                       ; clear ECX
+    PUSH  EBX                           ; copy the string address in EBX
+    POP   EDI                           ;  to EDI
+    MOV   ESI,EDI                       ; copy EDI to ESI
+    MOV   CX,[ESI-2]                    ; grab string length using ESI, stuff it into CX
 
 PutStr1:
-    ; Get character
     MOV   BL,BYTE [EDI]                 ; get next character
-    CMP   BL,0                          ; is it 0 (Null terminator)?
-    JE    PutStr2                       ; yep-bail out
-
-    ; Print the character
-    CALL  PutCh                         ; Nope-print it out
-
-    ; Go to next character
+    CALL  PutCh                         ; print it out
     INC   EDI                           ; go to next character
-    JMP   PutStr1
+    LOOP  PutStr1
 
-PutStr2:
     ; Update hardware cursor
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
@@ -213,13 +208,13 @@ Stage3:
     ;-------------------------------
     CALL  ClrSrc
 
-    MOV   EBX,[Msg1]
+    MOV   EBX,Msg1
     CALL  PutStr
 
     MOV   EBX,NewLine
     CALL  PutStr
 
-    MOV   EBX,[Msg2]
+    MOV   EBX,Msg2
     CALL  PutStr
 
     ;---------------
@@ -231,39 +226,14 @@ Stage3:
 ;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
-; https://www.nasm.us/doc/nasmdoc4.html
-; 4.11.10 STRUC and ENDSTRUC
-struc Str
-  .Ptr:     RESD  1
-  .Len:     RESD  1
-endstruc
-
-Msg1:
-  istruc Str
-  at Str.Ptr, DD Msg1x
-  at Str.Len, DD Msg1y-Msg1x
-  iend
-  Msg1x:      DB  "------   MyOs v0.1.2   -----",0
-  Msg1y:
-
-Msg2:
-  istruc Str
-  at Str.Ptr, DD Msg2x
-  at Str.Len, DD Msg2y-Msg2x
-  iend
-  Msg2x:    DB  "------  32 Bit Kernel  -----"
-  Msg2y:
-
-NewLine     DB  0x0A,0
-
-Msg         DB  0x0A                    ; Newline
-            DB  0x0A                    ; Newline
-            DB  "                     ------   MyOs v0.1.1   -----"
-            DB  0x0A                    ; Newline
-            DB  0x0A                    ; Newline
-            DB  "                     ------  32 Bit Kernel  -----"
-            DB  0x0A                    ; Newline
-            DB  0                       ; End of string
+%macro String 2
+%1Len       DW  %1End-%1
+%1          DB  %2
+%1End:
+%endmacro
+String  Msg1,"------   MyOs v0.1.1   -----"
+String  Msg2,"------  32 Bit Kernel  -----"
+String  NewLine,0x0A
 
 ChAttrib    EQU 63                      ; character attribute (White text on light blue background)
 Cols        EQU 80                      ; width and height of screen
