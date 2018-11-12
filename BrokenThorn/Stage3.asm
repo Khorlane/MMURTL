@@ -86,7 +86,7 @@ PutCh:
     ; Update next position
     ;---------------------
     INC   BYTE [CurX]                   ; go to next character
-    JMP   PutCh2                        ; nope, bail out
+    JMP   PutCh2                        ; we're done
 
     ;---------------
     ; Go to next row
@@ -112,8 +112,9 @@ PutStr:
     XOR   ECX,ECX                       ; clear ECX
     PUSH  EBX                           ; copy the string address in EBX
     POP   EDI                           ;  to EDI
-    MOV   ESI,EDI                       ; copy EDI to ESI
-    MOV   CX,[ESI-2]                    ; grab string length using ESI, stuff it into CX
+    MOV   CX,[EDI]                      ; grab string length using ESI, stuff it into CX
+    SUB   CX,2                          ; subtract out 2 bytes for the length field
+    ADD   EDI,2                         ; bump past the length field to the beginning of string
 
 PutStr1:
     MOV   BL,BYTE [EDI]                 ; get next character
@@ -227,9 +228,9 @@ Stage3:
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
 %macro String 2
-%1Len       DW  %1End-%1
-%1          DB  %2
-%1End:
+%1          DW  %%EndStr-%1
+            DB  %2
+%%EndStr:
 %endmacro
 String  Msg1,"------   MyOs v0.1.1   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
