@@ -17,63 +17,38 @@
 ; Video Routines
 ;--------------------------------------------------------------------------------------------------
 
-;----------------------------
-; Print a character to screen
-; BL = Character to print
-;----------------------------
-PutCh:
-    PUSHA                               ; save registers
-    MOV   EDI,VidMem                    ; get pointer to video memory
+;------------------------------------------
+; Routine to calculate video memory address
+;   represented by the given Row,Col
+;------------------------------------------
+CalcVideoAddr:
+    XOR   EAX,EAX                       ; Row calculation
+    MOV   AL,[Row]                      ;  row
+    DEC   EAX                           ;  minus 1
+    MOV   EDX,160                       ;  times
+    MUL   EDX                           ;  160
+    PUSH  EAX                           ;  save it
+    XOR   EAX,EAX                       ; Col calculation
+    MOV   AL,[Col]                      ;  col
+    MOV   EDX,2                         ;  times
+    MUL   EDX                           ;  2
+    SUB   EAX,EDX                       ;  minus 2
+    POP   EDX                           ; Add col calculation
+    ADD   EAX,EDX                       ;  to row calculation
+    ADD   EAX,VidMem                    ;  plus VidMem
+    MOV   EDI,EAX                       ; save in EDI
+    RET
 
-    ;---------------------
-    ; Get current position
-    ;---------------------
-    XOR   EAX,EAX                       ; clear eax
-
-    ;----------------------------------------------------
-    ; Remember: currentPos = x + y * Cols!
-    ; x and y are in CurX and CurY.
-    ; Because there are two bytes per character,
-    ; Cols=number of characters in a line.
-    ; We have to multiply this by 2 to get number
-    ; of bytes per line. This is the screen width,
-    ; so multiply screen with * CurY to get current line
-    ;----------------------------------------------------
-    MOV   ECX,Cols*2                    ; Mode 7 has 2 bytes per char, so its Cols*2 bytes per line
-    MOV   AL,BYTE [CurY]                ; get y pos
-    MUL   ECX                           ; multiply y*Cols
-    PUSH  EAX                           ; save eax--the multiplication
-
-    ;-------------------------------------
-    ; Now y * screen width is in eax.
-    ; Now, just add CurX. But, again
-    ; remember that CurX is relative
-    ; to the current character count,
-    ; not byte count. Because there are
-    ; two bytes per character, we
-    ; have to multiply CurX by 2 first,
-    ; then add it to our screen width * y.
-    ;-------------------------------------
-    MOV   AL,BYTE [CurX]                ; multiply CurX by 2 because it is 2 bytes per char
-    MOV   CL,2
-    MUL   CL
-    POP   ECX                           ; pop y*Cols result
-    ADD   EAX,ECX
-
-    ;------------------------------------
-    ; Now eax contains the offset address
-    ; to draw the character at, so just
-    ; add it to the base address
-    ; of video memory (Stored in edi)
-    ;------------------------------------
-    XOR   ECX,ECX
-    ADD   EDI,EAX                       ; add it to the base address
-
+;------------------------------
+; Put a character on the screen
+; EDI = address in video memory
+;------------------------------
+PutChar:
     ;-------------------
     ; Watch for new line
     ;-------------------
     CMP   BL,0Ah                        ; is it a newline character?
-    JE    PutCh1                        ; yep--go to next row
+    JE    PutChar1                      ; yep--go to next row
 
     ;------------------
     ; Print a character
@@ -85,24 +60,22 @@ PutCh:
     ;---------------------
     ; Update next position
     ;---------------------
-    INC   BYTE [CurX]                   ; go to next character
-    JMP   PutCh2                        ; we're done
+    INC   BYTE [Col]                    ; go to next character
+    JMP   PutChar2                      ; we're done
 
     ;---------------
     ; Go to next row
     ;---------------
-  PutCh1:
-    MOV BYTE [CurX],0                   ; go back to col 0
-    INC BYTE [CurY]                     ; go to next row
+  PutChar1:
+    MOV BYTE [Col],1                    ; go back to col 1
+    INC BYTE [Row]                      ; go to next row
 
     ;---------------------------
     ; Restore registers & return
     ;---------------------------
- PutCh2:
-    POPA                                ; restore registers and return
+ PutChar2:
     RET
-; Calculate video memory offset
-; 
+
 ;---------------------------------
 ; Print a null terminated string
 ; EBX = address of string to print
@@ -116,21 +89,19 @@ PutStr:
     MOV   CX,[ESI]                      ; grab string length using ESI, stuff it into CX
     SUB   CX,2                          ; subtract out 2 bytes for the length field
     ADD   ESI,2                         ; bump past the length field to the beginning of string
-
 PutStr1:
     MOV   BL,BYTE [ESI]                 ; get next character
-    CALL  PutCh                         ; print it out
+    CALL  CalcVideoAddr                 ; calculate video address
+    CALL  PutChar                       ; print it out
     INC   ESI                           ; go to next character
     LOOP  PutStr1
-
     ; Update hardware cursor
     ; Its more efficiant to update the cursor after displaying
     ; the complete string because direct VGA is slow
-
-    MOV   BH,BYTE [CurY]                ; get current position
-    MOV   BL,BYTE [CurX]
+    MOV   BH,BYTE [Row]                 ; BH = row
+    MOV   BL,BYTE [Col]                 ; BL = col
+    DEC   BH                            ; BH-- (this works, but why??, MoveCursor might need work)
     CALL  MovCursor                     ; update cursor
-
     POPA                                ; restore registers, and return
     RET
 
@@ -143,9 +114,9 @@ MovCursor:
     PUSHA                               ; save registers (aren't you getting tired of this comment?)
 
     ; Get current position
-    ; Here, CurX and CurY are relitave to the current position on screen, not in memory.
+    ; Here, Col and Row are relitave to the current position on screen, not in memory.
     ; That is, we don't need to worry about the byte alignment we do when displaying characters,
-    ; so just follow the forumla: location = CurX + CurY * Cols
+    ; so just follow the forumla: location = Col + Row * Cols
     XOR   EAX,EAX
     MOV   ECX,Cols
     MOV   AL,BH                         ; get y pos
@@ -187,8 +158,8 @@ ClrSrc:
     MOV   AH,ChAttrib
     MOV   AL,' '
     REP   STOSW
-    MOV   BYTE [CurX],0
-    MOV   BYTE [CurY],0
+    MOV   BYTE [Col],1
+    MOV   BYTE [Row],1
     POPA
     RET
 
@@ -210,6 +181,8 @@ Stage3:
     ;-------------------------------
     CALL  ClrSrc
 
+    MOV   BYTE [Col],1
+    MOV   BYTE [Row],10
     MOV   EBX,Msg1
     CALL  PutStr
 
@@ -239,6 +212,6 @@ String  NewLine,0x0A
 
 ChAttrib    EQU 63                      ; character attribute (White text on light blue background)
 Cols        EQU 80                      ; width and height of screen
-CurX        DB  0                       ; current x location
-CurY        DB  0                       ; current y location
+Row         DB  0                       ; Row (1-25)
+Col         DB  0                       ; Col (1-80)
 VidMem      EQU 0B8000h                 ; video memory
