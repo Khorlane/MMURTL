@@ -101,7 +101,8 @@ PutCh:
  PutCh2:
     POPA                                ; restore registers and return
     RET
-
+; Calculate video memory offset
+; 
 ;---------------------------------
 ; Print a null terminated string
 ; EBX = address of string to print
@@ -111,15 +112,15 @@ PutStr:
     PUSHA                               ; save registers
     XOR   ECX,ECX                       ; clear ECX
     PUSH  EBX                           ; copy the string address in EBX
-    POP   EDI                           ;  to EDI
-    MOV   CX,[EDI]                      ; grab string length using ESI, stuff it into CX
+    POP   ESI                           ;  to ESI
+    MOV   CX,[ESI]                      ; grab string length using ESI, stuff it into CX
     SUB   CX,2                          ; subtract out 2 bytes for the length field
-    ADD   EDI,2                         ; bump past the length field to the beginning of string
+    ADD   ESI,2                         ; bump past the length field to the beginning of string
 
 PutStr1:
-    MOV   BL,BYTE [EDI]                 ; get next character
+    MOV   BL,BYTE [ESI]                 ; get next character
     CALL  PutCh                         ; print it out
-    INC   EDI                           ; go to next character
+    INC   ESI                           ; go to next character
     LOOP  PutStr1
 
     ; Update hardware cursor
