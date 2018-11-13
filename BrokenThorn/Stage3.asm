@@ -17,6 +17,31 @@
 ; Video Routines
 ;--------------------------------------------------------------------------------------------------
 
+;---------------
+;- Color Codes -
+;---------------
+;  0 0 Black
+;  1 1 Blue
+;  2 2 Green
+;  3 3 Cyan
+;  4 4 Red
+;  5 5 Purple
+;  6 6 Brown
+;  7 7 Gray
+;  8 8 Dark Gray
+;  9 9 Light Blue
+; 10 A Light Green
+; 11 B Light Cyan
+; 12 C Light Red
+; 13 D Light Purple
+; 14 E Yellow
+; 15 F White
+; Example 3F 
+;         ^^
+;         ||
+;         ||- Foreground F = White
+;         |-- Background 3 = Cyan
+
 ;------------------------------------------
 ; Routine to calculate video memory address
 ;   represented by the given Row,Col
@@ -44,6 +69,7 @@ CalcVideoAddr:
 ; EDI = address in video memory
 ;------------------------------
 PutChar:
+    MOV   BL,[Char]
     ;-------------------
     ; Watch for new line
     ;-------------------
@@ -54,7 +80,7 @@ PutChar:
     ; Print a character
     ;------------------
     MOV   DL,BL                         ; Get character
-    MOV   DH,ChAttrib                   ; the character attribute
+    MOV   DH,[ColorAttr]                ; the character attribute
     MOV   WORD [EDI],DX                 ; write to video display
 
     ;---------------------
@@ -91,6 +117,7 @@ PutStr:
     ADD   ESI,2                         ; bump past the length field to the beginning of string
 PutStr1:
     MOV   BL,BYTE [ESI]                 ; get next character
+    MOV   [Char],BL                     ;  and save it
     CALL  CalcVideoAddr                 ; calculate video address
     CALL  PutChar                       ; print it out
     INC   ESI                           ; go to next character
@@ -150,16 +177,29 @@ MovCursor:
 ;-------------
 ; Clear Screen
 ;-------------
-ClrSrc:
+ClrScr:
     PUSHA
     CLD
     MOV   EDI,VidMem
     MOV   CX,2000
-    MOV   AH,ChAttrib
+    MOV   AH,[ColorAttr]
     MOV   AL,' '
     REP   STOSW
     MOV   BYTE [Col],1
     MOV   BYTE [Row],1
+    POPA
+    RET
+
+;-------------------
+;Set Color Attribute
+;-------------------
+SetColorAttr:
+    PUSHA
+    MOV   AL,[ColorBack]
+    SHL   AL,4
+    MOV   BL,[ColorFore]
+    OR    EAX,EBX
+    MOV   [ColorAttr],AL
     POPA
     RET
 
@@ -179,7 +219,10 @@ Stage3:
     ;-------------------------------
     ; Clear screen and print success
     ;-------------------------------
-    CALL  ClrSrc
+    MOV   BYTE [ColorBack],Black
+    MOV   BYTE [ColorFore],Purple
+    CALL  SetColorAttr
+    CALL  ClrScr
 
     MOV   BYTE [Col],1
     MOV   BYTE [Row],10
@@ -210,8 +253,15 @@ String  Msg1,"------   MyOs v0.1.1   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
 String  NewLine,0x0A
 
-ChAttrib    EQU 63                      ; character attribute (White text on light blue background)
+ColorBack   DB  0                       ; Background color (00h - 0Fh)
+ColorFore   DB  0                       ; Foreground color (00h - 0Fh)
+ColorAttr   DB  0                       ; Combination of background and foreground color (e.g. 3Fh 3=cyan background,F=white text)
+Char        DB  0                       ; ASCII character
 Cols        EQU 80                      ; width and height of screen
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
 VidMem      EQU 0B8000h                 ; video memory
+Black       EQU 00h                     ; Black
+Cyan        EQU 03h                     ; Cyan
+Purple      EQU 05h                     ; Purple
+White       EQU 0Fh                     ; White
