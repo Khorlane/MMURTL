@@ -242,5 +242,7 @@ ipx=false
 mount c C:\Steve\MyOs\MMURTL\BrokenThorn
 imgmount a "C:\Steve\MyOs\MMURTL\BrokenThorn\floppy.img" -t floppy -fs fat
 c:
+build4.bat
+exit
 #mount a a:\ -t floppy
 #path %path%;C:\TASM;C:\TC
