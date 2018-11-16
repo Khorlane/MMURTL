@@ -69,45 +69,26 @@ CalcVideoAddr:
 ; EDI = address in video memory
 ;------------------------------
 PutChar:
-    MOV   BL,[Char]
-    ;-------------------
-    ; Watch for new line
-    ;-------------------
-    CMP   BL,0Ah                        ; is it a newline character?
+    PUSHA                               ; Save registers
+    MOV   DL,[Char]                     ; DL = character
+    CMP   DL,0Ah                        ; is it a newline character?
     JE    PutChar1                      ; yep--go to next row
-
-    ;------------------
-    ; Print a character
-    ;------------------
-    MOV   DL,BL                         ; Get character
-    MOV   DH,[ColorAttr]                ; the character attribute
-    MOV   WORD [EDI],DX                 ; write to video display
-
-    ;---------------------
-    ; Update next position
-    ;---------------------
-    INC   BYTE [Col]                    ; go to next character
-    JMP   PutChar2                      ; we're done
-
-    ;---------------
-    ; Go to next row
-    ;---------------
-  PutChar1:
-    MOV BYTE [Col],1                    ; go back to col 1
-    INC BYTE [Row]                      ; go to next row
-
-    ;---------------------------
-    ; Restore registers & return
-    ;---------------------------
- PutChar2:
-    RET
+    MOV   DH,[ColorAttr]                ; DH = attribute
+    MOV   WORD [EDI],DX                 ; Move attribute and character to video display
+    INC   BYTE [Col]                    ; Bump the column by 1
+    JMP   PutChar2                      ; We're done
+PutChar1:
+    MOV BYTE [Col],1                    ; Newline, so go back to col 1
+    INC BYTE [Row]                      ;  and bump row by 1
+PutChar2:
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
 
 ;---------------------------------
 ; Print a null terminated string
 ; EBX = address of string to print
 ;---------------------------------
 PutStr:
-    ; Save registers
     PUSHA                               ; save registers
     XOR   ECX,ECX                       ; clear ECX
     PUSH  EBX                           ; copy the string address in EBX
@@ -122,57 +103,44 @@ PutStr1:
     CALL  PutChar                       ; print it out
     INC   ESI                           ; go to next character
     LOOP  PutStr1
-    ; Update hardware cursor
-    ; Its more efficiant to update the cursor after displaying
-    ; the complete string because direct VGA is slow
-    MOV   BH,BYTE [Row]                 ; BH = row
-    MOV   BL,BYTE [Col]                 ; BL = col
-    DEC   BH                            ; BH-- (this works, but why??, MoveCursor might need work)
-    CALL  MovCursor                     ; update cursor
+    CALL  MoveCursor                     ; update cursor (do this once after displaying the string, more efficient)
     POPA                                ; restore registers, and return
-    RET
+    RET                                 ; Return to caller
 
 ;-----------------------
 ; Update hardware cursor
-; bh = Y pos
-; bl = x pos
 ;-----------------------
-MovCursor:
-    PUSHA                               ; save registers (aren't you getting tired of this comment?)
+MoveCursor:
+    PUSHA                               ; Save registers
+    MOV   BH,BYTE [Row]                 ; BH = row
+    MOV   BL,BYTE [Col]                 ; BL = col
+    DEC   BH                            ; BH-- (Make row zero based)
 
-    ; Get current position
-    ; Here, Col and Row are relitave to the current position on screen, not in memory.
-    ; That is, we don't need to worry about the byte alignment we do when displaying characters,
-    ; so just follow the forumla: location = Col + Row * Cols
-    XOR   EAX,EAX
-    MOV   ECX,Cols
-    MOV   AL,BH                         ; get y pos
-    MUL   ECX                           ; multiply y*Cols
-    ADD   AL,BL                         ; Now add x
-    MOV   EBX,EAX
+    XOR   EAX,EAX                       ; Clear EAX
+    MOV   ECX,TotCol                    ; ECX = TotCol
+    MOV   AL,BH                         ; Row
+    MUL   ECX                           ;  * TotCol
+    ADD   AL,BL                         ;  + Col
+    MOV   EBX,EAX                       ; Save result in EBX (BL,BH in particular)
 
-    ; Set low byte index to VGA register
-    MOV   AL,0Fh
-    MOV   DX,03D4h
-    OUT   DX,AL
+    XOR   EAX,EAX                       ; Clear EAX
+    MOV   DX,03D4h                      ; Set VGA port to  03D4h (Video controller register select)
+    MOV   AL,0Fh                        ; Set VGA port-index 0Fh (cursor location low byte)
+    OUT   DX,AL                         ; Write to the VGA port
+    MOV   DX,03D5h                      ; Set VGA port to  03D5h (Video controller data)
+    MOV   AL,BL                         ; Set low byte of calculated cursor position from above
+    OUT   DX,AL                         ; Write to the VGA port
 
-    MOV   AL,BL
-    MOV   DX,03D5h
-    OUT   DX,AL                         ; low byte
+    XOR   EAX,EAX                       ; Clear EAX
+    MOV   DX,03D4h                      ; Set VGA port to  03D4h (Video controller register select)
+    MOV   AL,0Eh                        ; Set VGA port-index 0Fh (cursor location high byte)
+    OUT   DX,AL                         ; Write to the VGA port
+    MOV   DX,03D5h                      ; Set VGA port to  03D5h (Video controller data)
+    MOV   AL,BH                         ; Set high byte of calculated cursor position from above
+    OUT   DX,AL                         ; Write to the VGA port
 
-    ; Set high byte index to VGA register
-    XOR   EAX,EAX
-
-    MOV   AL,0Eh
-    MOV   DX,03D4h
-    OUT   DX,AL
-
-    MOV   AL,BH
-    MOV   DX,03D5h
-    OUT   DX,AL                         ; high byte
-
-    POPA
-    RET
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
 
 ;-------------
 ; Clear Screen
@@ -251,13 +219,13 @@ Stage3:
 %endmacro
 String  Msg1,"------   MyOs v0.1.1   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
-String  NewLine,0x0A
+String  NewLine,0Ah
 
 ColorBack   DB  0                       ; Background color (00h - 0Fh)
 ColorFore   DB  0                       ; Foreground color (00h - 0Fh)
 ColorAttr   DB  0                       ; Combination of background and foreground color (e.g. 3Fh 3=cyan background,F=white text)
 Char        DB  0                       ; ASCII character
-Cols        EQU 80                      ; width and height of screen
+TotCol      EQU 80                      ; width and height of screen
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
 VidMem      EQU 0B8000h                 ; video memory
