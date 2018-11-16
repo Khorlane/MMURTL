@@ -89,22 +89,22 @@ PutChar2:
 ; EBX = address of string to print
 ;---------------------------------
 PutStr:
-    PUSHA                               ; save registers
-    XOR   ECX,ECX                       ; clear ECX
-    PUSH  EBX                           ; copy the string address in EBX
+    PUSHA                               ; Save registers
+    XOR   ECX,ECX                       ; Clear ECX
+    PUSH  EBX                           ; Copy the string address in EBX
     POP   ESI                           ;  to ESI
-    MOV   CX,[ESI]                      ; grab string length using ESI, stuff it into CX
-    SUB   CX,2                          ; subtract out 2 bytes for the length field
-    ADD   ESI,2                         ; bump past the length field to the beginning of string
+    MOV   CX,[ESI]                      ; Grab string length using ESI, stuff it into CX
+    SUB   CX,2                          ; Subtract out 2 bytes for the length field
+    ADD   ESI,2                         ; Bump past the length field to the beginning of string
 PutStr1:
-    MOV   BL,BYTE [ESI]                 ; get next character
+    MOV   BL,BYTE [ESI]                 ; Get next character
     MOV   [Char],BL                     ;  and save it
-    CALL  CalcVideoAddr                 ; calculate video address
-    CALL  PutChar                       ; print it out
-    INC   ESI                           ; go to next character
-    LOOP  PutStr1
-    CALL  MoveCursor                     ; update cursor (do this once after displaying the string, more efficient)
-    POPA                                ; restore registers, and return
+    CALL  CalcVideoAddr                 ; Calculate video address
+    CALL  PutChar                       ; Print it out
+    INC   ESI                           ; Bump ESI to next character
+    LOOP  PutStr1                       ; Loop on CX
+    CALL  MoveCursor                    ; Update cursor (do this once after displaying the string, more efficient)
+    POPA                                ; Restore registers
     RET                                 ; Return to caller
 
 ;-----------------------
@@ -146,30 +146,30 @@ MoveCursor:
 ; Clear Screen
 ;-------------
 ClrScr:
-    PUSHA
-    CLD
-    MOV   EDI,VidMem
-    MOV   CX,2000
-    MOV   AH,[ColorAttr]
-    MOV   AL,' '
-    REP   STOSW
-    MOV   BYTE [Col],1
-    MOV   BYTE [Row],1
-    POPA
-    RET
+    PUSHA                               ; Save registers
+    CLD                                 ; Clear DF Flag, REP STOSW increments EDI
+    MOV   EDI,VidMem                    ; Set EDI to beginning of Video Memory
+    MOV   CX,2000                       ; 2,000 'words' on the screen
+    MOV   AH,[ColorAttr]                ; Set color attribute
+    MOV   AL,' '                        ; We're going to 'blank' out the screen
+    REP   STOSW                         ; Do it!
+    MOV   BYTE [Col],1                  ; Set Col to 1
+    MOV   BYTE [Row],1                  ; Set Row to 1
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
 
 ;-------------------
 ;Set Color Attribute
 ;-------------------
 SetColorAttr:
-    PUSHA
-    MOV   AL,[ColorBack]
-    SHL   AL,4
-    MOV   BL,[ColorFore]
-    OR    EAX,EBX
-    MOV   [ColorAttr],AL
-    POPA
-    RET
+    PUSHA                               ; Save registers
+    MOV   AL,[ColorBack]                ; Background color (e.g. 3) 
+    SHL   AL,4                          ;  goes in highest 4 bits of AL
+    MOV   BL,[ColorFore]                ; Foreground color in lowest 4 bits of BL (e.g. F)
+    OR    EAX,EBX                       ; AL now has the combination of background and foreground (e.g. 3F)
+    MOV   [ColorAttr],AL                ; Save result in ColorAttr
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
 
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
@@ -187,21 +187,19 @@ Stage3:
     ;-------------------------------
     ; Clear screen and print success
     ;-------------------------------
-    MOV   BYTE [ColorBack],Black
-    MOV   BYTE [ColorFore],Purple
-    CALL  SetColorAttr
-    CALL  ClrScr
+    MOV   BYTE [ColorBack],Black        ; Background color
+    MOV   BYTE [ColorFore],Purple       ; Foreground colr
+    CALL  SetColorAttr                  ; Set color
+    CALL  ClrScr                        ; Clear screen
 
-    MOV   BYTE [Col],1
-    MOV   BYTE [Row],10
-    MOV   EBX,Msg1
-    CALL  PutStr
-
-    MOV   EBX,NewLine
-    CALL  PutStr
-
-    MOV   EBX,Msg2
-    CALL  PutStr
+    MOV   BYTE [Row],10                 ; Row 10 
+    MOV   BYTE [Col],1                  ; Col 1
+    MOV   EBX,Msg1                      ; Put
+    CALL  PutStr                        ;  Msg1
+    MOV   EBX,NewLine                   ; Put
+    CALL  PutStr                        ;  a New Line
+    MOV   EBX,Msg2                      ; Put
+    CALL  PutStr                        ;  Msg2
 
     ;---------------
     ; Stop execution
