@@ -11,7 +11,7 @@
 
 [bits  32]                              ; 32 bit code
     ORG   100000h                       ; Kernel starts at 1 MB
-    JMP   Stage3                        ; jump to entry point
+    JMP   Stage3                        ; Jump to entry point
 
 ;--------------------------------------------------------------------------------------------------
 ; Video Routines
@@ -36,7 +36,7 @@
 ; 13 D Light Purple
 ; 14 E Yellow
 ; 15 F White
-; Example 3F 
+; Example 3F
 ;         ^^
 ;         ||
 ;         ||- Foreground F = White
@@ -47,6 +47,7 @@
 ;   represented by the given Row,Col
 ;------------------------------------------
 CalcVideoAddr:
+    PUSHA                               ; Save registers
     XOR   EAX,EAX                       ; Row calculation
     MOV   AL,[Row]                      ;  row
     DEC   EAX                           ;  minus 1
@@ -61,8 +62,9 @@ CalcVideoAddr:
     POP   EDX                           ; Add col calculation
     ADD   EAX,EDX                       ;  to row calculation
     ADD   EAX,VidMem                    ;  plus VidMem
-    MOV   EDI,EAX                       ; save in EDI
-    RET
+    MOV   [VidAdr],EAX                  ; Save in VidAdr
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
 
 ;------------------------------
 ; Put a character on the screen
@@ -70,17 +72,10 @@ CalcVideoAddr:
 ;------------------------------
 PutChar:
     PUSHA                               ; Save registers
+    MOV   EDI,[VidAdr]                  ; EDI = Video Address
     MOV   DL,[Char]                     ; DL = character
-    CMP   DL,0Ah                        ; is it a newline character?
-    JE    PutChar1                      ; yep--go to next row
     MOV   DH,[ColorAttr]                ; DH = attribute
     MOV   WORD [EDI],DX                 ; Move attribute and character to video display
-    INC   BYTE [Col]                    ; Bump the column by 1
-    JMP   PutChar2                      ; We're done
-PutChar1:
-    MOV BYTE [Col],1                    ; Newline, so go back to col 1
-    INC BYTE [Row]                      ;  and bump row by 1
-PutChar2:
     POPA                                ; Restore registers
     RET                                 ; Return to caller
 
@@ -90,6 +85,7 @@ PutChar2:
 ;---------------------------------
 PutStr:
     PUSHA                               ; Save registers
+    CALL  CalcVideoAddr                 ; Calculate video address
     XOR   ECX,ECX                       ; Clear ECX
     PUSH  EBX                           ; Copy the string address in EBX
     POP   ESI                           ;  to ESI
@@ -98,11 +94,20 @@ PutStr:
     ADD   ESI,2                         ; Bump past the length field to the beginning of string
 PutStr1:
     MOV   BL,BYTE [ESI]                 ; Get next character
-    MOV   [Char],BL                     ;  and save it
+    CMP   BL,0Ah                        ; NewLine?
+    JNE   PutStr2                       ;  No
+    MOV   BYTE [Col],1                  ;  Yes, back to col 1
+    INC   BYTE [Row]                    ;   and bump row by 1
     CALL  CalcVideoAddr                 ; Calculate video address
+    JMP   PutStr3                       ; Continue
+PutStr2:
+    MOV   [Char],BL                     ; Stash our character
     CALL  PutChar                       ; Print it out
-    INC   ESI                           ; Bump ESI to next character
-    LOOP  PutStr1                       ; Loop on CX
+    ADD   DWORD [VidAdr],2              ; Bump Video Address by 2
+    INC   BYTE [Col]                    ; Bump column by 1
+PutStr3:
+    INC   ESI                           ; Bump ESI to next character in our string
+    LOOP  PutStr1                       ; Loop (Decrement CX each time until CX is zero)
     CALL  MoveCursor                    ; Update cursor (do this once after displaying the string, more efficient)
     POPA                                ; Restore registers
     RET                                 ; Return to caller
@@ -152,7 +157,7 @@ ClrScr:
     MOV   CX,2000                       ; 2,000 'words' on the screen
     MOV   AH,[ColorAttr]                ; Set color attribute
     MOV   AL,' '                        ; We're going to 'blank' out the screen
-    REP   STOSW                         ; Do it!
+    REP   STOSW                         ; Move AX to video memory pointed to by EDI, Repeat CX times, increment EDI each time
     MOV   BYTE [Col],1                  ; Set Col to 1
     MOV   BYTE [Row],1                  ; Set Row to 1
     POPA                                ; Restore registers
@@ -163,7 +168,7 @@ ClrScr:
 ;-------------------
 SetColorAttr:
     PUSHA                               ; Save registers
-    MOV   AL,[ColorBack]                ; Background color (e.g. 3) 
+    MOV   AL,[ColorBack]                ; Background color (e.g. 3)
     SHL   AL,4                          ;  goes in highest 4 bits of AL
     MOV   BL,[ColorFore]                ; Foreground color in lowest 4 bits of BL (e.g. F)
     OR    EAX,EBX                       ; AL now has the combination of background and foreground (e.g. 3F)
@@ -178,11 +183,11 @@ Stage3:
     ;--------------
     ; Set registers
     ;--------------
-    MOV   AX,10h                        ; set data segments to data selector (10h)
-    MOV   DS,AX
-    MOV   SS,AX
-    MOV   ES,AX
-    MOV   ESP,90000h                    ; stack begins from 90000h
+    MOV   AX,10h                        ; Set data
+    MOV   DS,AX                         ;  segments to
+    MOV   SS,AX                         ;   data selector
+    MOV   ES,AX                         ;    (10h)
+    MOV   ESP,90000h                    ; Stack begins from 90000h
 
     ;-------------------------------
     ; Clear screen and print success
@@ -192,7 +197,7 @@ Stage3:
     CALL  SetColorAttr                  ; Set color
     CALL  ClrScr                        ; Clear screen
 
-    MOV   BYTE [Row],10                 ; Row 10 
+    MOV   BYTE [Row],10                 ; Row 10
     MOV   BYTE [Col],1                  ; Col 1
     MOV   EBX,Msg1                      ; Put
     CALL  PutStr                        ;  Msg1
@@ -215,7 +220,7 @@ Stage3:
             DB  %2
 %%EndStr:
 %endmacro
-String  Msg1,"------   MyOs v0.1.1   -----"
+String  Msg1,"------   MyOs v0.1.2   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
 String  NewLine,0Ah
 
@@ -226,7 +231,8 @@ Char        DB  0                       ; ASCII character
 TotCol      EQU 80                      ; width and height of screen
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
-VidMem      EQU 0B8000h                 ; video memory
+VidMem      EQU 0B8000h                 ; Video Memory (Starting Address)
+VidAdr      DD  0                       ; Video Address
 Black       EQU 00h                     ; Black
 Cyan        EQU 03h                     ; Cyan
 Purple      EQU 05h                     ; Purple
