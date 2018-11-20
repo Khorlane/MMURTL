@@ -177,6 +177,34 @@ SetColorAttr:
     RET                                 ; Return to caller
 
 ;--------------------------------------------------------------------------------------------------
+; Install our IDT
+;--------------------------------------------------------------------------------------------------
+InstallIDT:
+    CLI                                 ; Disable interrupts
+    PUSHA                               ; Save registers
+    LIDT  [IDT2]                        ; Load IDT into IDTR
+    MOV   EDI,IDT1                      ; Set EDI to beginning of IDT
+    MOV   CX,2048                       ; 2048 bytes in IDT
+    XOR   EAX,EAX                       ; Set all 256 IDT entries to NULL (0h)  
+    REP   STOSB                         ; Move AL to IDT pointed to by EDI, Repeat CX times, increment EDI each time
+    STI                                 ; Enable interrupts
+    POPA                                ; Restore registers
+    RET                                 ; All done!
+
+;--------------------------------------------------------------------------------------------------
+; Keyboard Routines
+;--------------------------------------------------------------------------------------------------
+;KEYBOARD.ASM
+;  PUBLIC IntKeyBrd:
+
+;INITCODE.ASM  ( 550)  MOV   ESI,OFFSET __AddIDTGate
+;MEMCODE.ASM   (1052)  PUBLIC __AddIDTGate:
+
+;INITCODE.ASM   (423)  CALL  FWORD PTR _AddIDTGate
+;INTCODE.ASM    (112)  CALL  FWORD PTR _AddIDTGate
+;MPUBLICS.ASM   ( 33)  PUBLIC _AddIDTGate      DF 00000000h:0D0h
+
+;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
 ;--------------------------------------------------------------------------------------------------
 Stage3:
@@ -188,6 +216,8 @@ Stage3:
     MOV   SS,AX                         ;   data selector
     MOV   ES,AX                         ;    (10h)
     MOV   ESP,90000h                    ; Stack begins from 90000h
+
+    CALL  InstallIDT                    ; Install our Interrupt Descriptor Table
 
     ;-------------------------------
     ; Clear screen and print success
@@ -213,6 +243,18 @@ Stage3:
     HLT
 
 ;--------------------------------------------------------------------------------------------------
+; Interrupt Descriptor Table (IDT)
+;--------------------------------------------------------------------------------------------------
+IDT1:
+TIMES 2048  DB 0                        ; The IDT is exactly 2048 bytes - 256 entries 8 bytes each
+;-------------------
+; pointer to our IDT
+;-------------------
+IDT2:
+                  DW  IDT2-IDT1-1       ; limit (Size of IDT)
+                  DD  IDT1              ; base of IDT
+
+;--------------------------------------------------------------------------------------------------
 ; Working Storage
 ;--------------------------------------------------------------------------------------------------
 %macro String 2
@@ -228,11 +270,15 @@ ColorBack   DB  0                       ; Background color (00h - 0Fh)
 ColorFore   DB  0                       ; Foreground color (00h - 0Fh)
 ColorAttr   DB  0                       ; Combination of background and foreground color (e.g. 3Fh 3=cyan background,F=white text)
 Char        DB  0                       ; ASCII character
-TotCol      EQU 80                      ; width and height of screen
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
-VidMem      EQU 0B8000h                 ; Video Memory (Starting Address)
 VidAdr      DD  0                       ; Video Address
+
+;--------------------------------------------------------------------------------------------------
+; Equates
+;--------------------------------------------------------------------------------------------------
+VidMem      EQU 0B8000h                 ; Video Memory (Starting Address)
+TotCol      EQU 80                      ; width and height of screen
 Black       EQU 00h                     ; Black
 Cyan        EQU 03h                     ; Cyan
 Purple      EQU 05h                     ; Purple
