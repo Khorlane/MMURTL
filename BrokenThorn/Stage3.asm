@@ -185,7 +185,7 @@ InstallIDT:
     LIDT  [IDT2]                        ; Load IDT into IDTR
     MOV   EDI,IDT1                      ; Set EDI to beginning of IDT
     MOV   CX,2048                       ; 2048 bytes in IDT
-    XOR   EAX,EAX                       ; Set all 256 IDT entries to NULL (0h)  
+    XOR   EAX,EAX                       ; Set all 256 IDT entries to NULL (0h)
     REP   STOSB                         ; Move AL to IDT pointed to by EDI, Repeat CX times, increment EDI each time
     STI                                 ; Enable interrupts
     POPA                                ; Restore registers
@@ -194,15 +194,20 @@ InstallIDT:
 ;--------------------------------------------------------------------------------------------------
 ; Keyboard Routines
 ;--------------------------------------------------------------------------------------------------
-;KEYBOARD.ASM
-;  PUBLIC IntKeyBrd:
-
-;INITCODE.ASM  ( 550)  MOV   ESI,OFFSET __AddIDTGate
-;MEMCODE.ASM   (1052)  PUBLIC __AddIDTGate:
-
-;INITCODE.ASM   (423)  CALL  FWORD PTR _AddIDTGate
-;INTCODE.ASM    (112)  CALL  FWORD PTR _AddIDTGate
-;MPUBLICS.ASM   ( 33)  PUBLIC _AddIDTGate      DF 00000000h:0D0h
+ReadKeyboard:
+    ;--------------
+    ; Read scancode from the keyboard buffer and reset the keyboard
+    ;--------------
+    IN    AL,060h                       ;Obtain scancode form Keyboart I/O Port
+    MOV   CL,AL                         ;Store the scancode in CL for now
+    IN    AL,061h                       ;Parse the Keyboard Command Port
+    MOV   AH,AL                         ;Store command code in AH for now
+    OR    AL,080h                       ;Set AL to disable command code
+    OUT   061h,AL                       ;Output disable command to Keyboard Command Port
+    MOV   AL,AH                         ;Set AL to the original command code
+    OUT   061h,AL                       ;Output enable command to Keyboard Command Port
+    MOV   AL,CL                         ;Restore the scancode to AL
+    RET
 
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
@@ -235,6 +240,12 @@ Stage3:
     CALL  PutStr                        ;  a New Line
     MOV   EBX,Msg2                      ; Put
     CALL  PutStr                        ;  Msg2
+
+    MOV   EBX,NewLine
+    CALL  PutStr
+    CALL  ReadKeyboard
+    MOV   [Char],AL
+    CALL  PutChar
 
     ;---------------
     ; Stop execution

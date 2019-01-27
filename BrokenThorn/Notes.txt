@@ -7,7 +7,7 @@ Open cmd.exe
 > Exit
 
 Open DosBox1
-> Build4
+> Build4 is automatically executed
 > Exit
 
 Open MyOs.bxrc
