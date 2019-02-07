@@ -239,10 +239,10 @@ ipx=false
 [autoexec]
 # Lines in this section will be run at startup.
 # You can put your MOUNT lines here.
-mount c C:\Steve\MyOs\MMURTL\BrokenThorn
-imgmount a "C:\Steve\MyOs\MMURTL\BrokenThorn\floppy.img" -t floppy -fs fat
+mount c C:\Dropbox\Steve\MyOs\MMURTL\BrokenThorn
+imgmount a "C:\Dropbox\Steve\MyOs\MMURTL\BrokenThorn\floppy.img" -t floppy -fs fat
 c:
 build4.bat
-exit
+;exit
 #mount a a:\ -t floppy
 #path %path%;C:\TASM;C:\TC

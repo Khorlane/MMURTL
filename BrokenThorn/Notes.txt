@@ -7,7 +7,7 @@ Open cmd.exe
 > Exit
 
 Open DosBox1
-> Build4 is automatically executed
+> Build4 is automatically executed and copies Stage2.bin and Stage3.bin to Floppy
 > Exit
 
 Open MyOs.bxrc

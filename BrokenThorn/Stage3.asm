@@ -199,14 +199,17 @@ ReadKeyboard:
     ; Read scancode from the keyboard buffer and reset the keyboard
     ;--------------
     IN    AL,060h                       ;Obtain scancode form Keyboart I/O Port
-    MOV   CL,AL                         ;Store the scancode in CL for now
-    IN    AL,061h                       ;Parse the Keyboard Command Port
-    MOV   AH,AL                         ;Store command code in AH for now
-    OR    AL,080h                       ;Set AL to disable command code
-    OUT   061h,AL                       ;Output disable command to Keyboard Command Port
-    MOV   AL,AH                         ;Set AL to the original command code
-    OUT   061h,AL                       ;Output enable command to Keyboard Command Port
-    MOV   AL,CL                         ;Restore the scancode to AL
+    MOV   [Char],AL                     ;Store the scancode in Char
+ReadKeyFlush:
+    MOV   ECX,2FFFFh
+IBE:
+    JMP   IBE1
+IBE1:
+    JMP   IBE2
+IBE2:
+    IN    AL,064h
+    TEST  AL,00000010b
+    LOOPNZ IBE
     RET
 
 ;--------------------------------------------------------------------------------------------------
@@ -224,14 +227,17 @@ Stage3:
 
     CALL  InstallIDT                    ; Install our Interrupt Descriptor Table
 
-    ;-------------------------------
-    ; Clear screen and print success
-    ;-------------------------------
+    ;-------------
+    ; Clear screen
+    ;-------------
     MOV   BYTE [ColorBack],Black        ; Background color
     MOV   BYTE [ColorFore],Purple       ; Foreground colr
     CALL  SetColorAttr                  ; Set color
     CALL  ClrScr                        ; Clear screen
-
+    
+    ;--------------
+    ; Print success
+    ;--------------
     MOV   BYTE [Row],10                 ; Row 10
     MOV   BYTE [Col],1                  ; Col 1
     MOV   EBX,Msg1                      ; Put
@@ -240,13 +246,28 @@ Stage3:
     CALL  PutStr                        ;  a New Line
     MOV   EBX,Msg2                      ; Put
     CALL  PutStr                        ;  Msg2
-
+    
+    ;-------------------
+    ; Get Keyboard input
+    ;-------------------
     MOV   EBX,NewLine
     CALL  PutStr
+    MOV   EBX,NewLine
+    CALL  PutStr
+    CLI
+GetKeyPresses:
     CALL  ReadKeyboard
-    MOV   [Char],AL
     CALL  PutChar
+    MOV   BL,[Char]
+    CMP   BL,42h                        ; Quit when F8 is pressed
+    JE    AllDone
+    JMP   GetKeyPresses
 
+AllDone:
+    MOV   EBX,NewLine
+    CALL  PutStr
+    MOV   EBX,Msg3
+    CALL  PutStr
     ;---------------
     ; Stop execution
     ;---------------
@@ -275,6 +296,7 @@ IDT2:
 %endmacro
 String  Msg1,"------   MyOs v0.1.2   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
+String  Msg3,"Our Kernel has ended!"
 String  NewLine,0Ah
 
 ColorBack   DB  0                       ; Background color (00h - 0Fh)
