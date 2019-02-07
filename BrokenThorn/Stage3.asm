@@ -200,16 +200,11 @@ ReadKeyboard:
     ;--------------
     IN    AL,060h                       ;Obtain scancode form Keyboart I/O Port
     MOV   [Char],AL                     ;Store the scancode in Char
-ReadKeyFlush:
     MOV   ECX,2FFFFh
-IBE:
-    JMP   IBE1
-IBE1:
-    JMP   IBE2
-IBE2:
+ReadKeyFlush:
     IN    AL,064h
     TEST  AL,00000010b
-    LOOPNZ IBE
+    LOOPNZ ReadKeyFlush
     RET
 
 ;--------------------------------------------------------------------------------------------------
@@ -296,7 +291,7 @@ IDT2:
 %endmacro
 String  Msg1,"------   MyOs v0.1.2   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
-String  Msg3,"Our Kernel has ended!"
+String  Msg3,"Our Kernel has ended!!"
 String  NewLine,0Ah
 
 ColorBack   DB  0                       ; Background color (00h - 0Fh)
