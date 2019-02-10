@@ -194,18 +194,29 @@ InstallIDT:
 ;--------------------------------------------------------------------------------------------------
 ; Keyboard Routines
 ;--------------------------------------------------------------------------------------------------
-ReadKeyboard:
+KbRead:
     ;--------------
     ; Read scancode from the keyboard buffer and reset the keyboard
     ;--------------
     IN    AL,060h                       ; Obtain scancode form Keyboart I/O Port
     MOV   [Char],AL                     ; Store the scancode in Char
     MOV   ECX,2FFFFh                    ; Sets the max times that LOOPNZ is executed 
-ReadKeyFlush:
+KbFlush:
     IN    AL,064h                       ; Read 8042 Status Register (bit 1 is input buffer status (0=empty, 1=full)
     TEST  AL,00000010b                  ; While bit 1 is 1,
-    LOOPNZ ReadKeyFlush                 ;  loop until bit 1 is 0 or ECX is 0
+    LOOPNZ KbFlush                      ;  loop until bit 1 is 0 or ECX is 0
     RET                                 ; All done!
+
+KbXlate:
+    MOV   AL,[Char]                     ; Translate
+    CMP   AL,010h                       ;  010h, the 
+    JE    KbKeyQ                        ;   scancode 
+    JMP   KbXlateDone                   ;    for the Q key,
+KbKeyQ:                                 ;     to the
+    MOV   AL,051h                       ;      ASCII code
+    MOV   [Char],AL                     ;        for an
+KbXlateDone:                            ;         uppercase
+    RET                                 ;          letter Q
 
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
@@ -251,10 +262,11 @@ Stage3:
     CALL  PutStr                        ;    of lines
     CLI                                 ; No Interrupts!
 GetKeyPresses:
-    CALL  ReadKeyboard                  ; Read the keyboard
+    CALL  KbRead                        ; Read the keyboard
+    CALL  KbXlate                       ; Translate scancode to ASCII
     CALL  PutChar                       ; Put the character on the screen
     MOV   BL,[Char]                     ; Quit
-    CMP   BL,42h                        ;  when F8 (scan code 42h is the F8 key)
+    CMP   BL,051h                       ;  when Q (ASCII 051h)
     JE    AllDone                       ;   is
     JMP   GetKeyPresses                 ;    pressed
 
@@ -262,10 +274,12 @@ AllDone:
     ;---------------
     ; Print shutdown
     ;---------------
-    MOV   EBX,NewLine                   ; Print
+    MOV   EBX,NewLine                   ; Put
+    CALL  PutStr                        ;  a New Line
+    MOV   EBX,NewLine                   ; Put
+    CALL  PutStr                        ;  a New Line
+    MOV   EBX,Msg3                      ; Put
     CALL  PutStr                        ;  Msg3
-    MOV   EBX,Msg3                      ;   on
-    CALL  PutStr                        ;    screen
 
     ;---------------
     ; Stop execution
