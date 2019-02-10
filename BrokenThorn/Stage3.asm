@@ -196,7 +196,7 @@ InstallIDT:
 ;--------------------------------------------------------------------------------------------------
 KbRead:
     ;--------------
-    ; Read scancode from the keyboard buffer and reset the keyboard
+    ; Read scancode
     ;--------------
     IN    AL,060h                       ; Obtain scancode form Keyboart I/O Port
     MOV   [Char],AL                     ; Store the scancode in Char
@@ -206,7 +206,9 @@ KbFlush:
     TEST  AL,00000010b                  ; While bit 1 is 1,
     LOOPNZ KbFlush                      ;  loop until bit 1 is 0 or ECX is 0
     RET                                 ; All done!
-
+    ;-------------------
+    ; Translate scancode
+    ;-------------------
 KbXlate:
     MOV   AL,[Char]                     ; Translate
     CMP   AL,010h                       ;  010h, the 
