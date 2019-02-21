@@ -220,6 +220,34 @@ KbKeyQ:                                 ;     to the
 KbXlateDone:                            ;         uppercase
     RET                                 ;          letter Q
 
+;---------
+; Hex Dump
+;---------
+HexDump:
+    PUSHA                               ; Save registers
+    MOV   ECX,8                         ; Blank
+    MOV   ESI,Buffer+2                  ;  out
+    MOV   AL,020h                       ;   the
+HexDump1:
+    MOV   [ESI],AL                      ;    8
+    INC   ESI                           ;     byte
+    LOOP  HexDump1                      ;      Buffer
+    MOV   ECX,8                         ; Setup
+    XOR   EDX,EDX                       ;  for translating
+    MOV   DL,[KbChar]                   ;   the keyboard
+    MOV   EBX,HexDigits                 ;    scan code
+    MOV   ESI,Buffer+9                  ;     to hex display
+HexDump2:
+    MOV   AL,DL                         ; Translate
+    AND   AL,15                         ;  each
+    XLAT                                ;   hex
+    MOV   [ESI],AL                      ;    digit
+    DEC   ESI                           ;     and put
+    SHR   EDX,4                         ;      it in
+    LOOP  HexDump2                      ;       Buffer
+    POPA                                ; Restore registers
+    RET                                 ; Return to caller
+
 ;--------------------------------------------------------------------------------------------------
 ; Stage3 - Our Kernel!
 ;--------------------------------------------------------------------------------------------------
@@ -265,10 +293,18 @@ Stage3:
     CLI                                 ; No Interrupts!
 GetKeyPresses:
     CALL  KbRead                        ; Read the keyboard
+    CALL  HexDump                       ; Translate to hex display
+    MOV   BYTE [Row],1                  ; Put hex
+    MOV   BYTE [Col],1                  ;  output
+    MOV   EBX,Buffer                    ;   at upper left
+    CALL  PutStr                        ;    corner of the screen
     CALL  KbXlate                       ; Translate scancode to ASCII
-    MOV   BL,[KbChar]
-    MOV   [Char],BL
-    CALL  PutChar                       ; Put the character on the screen
+    MOV   BYTE [Row],20                 ; Put the
+    MOV   BYTE [Col],1                  ;  keyboard
+    CALL  CalcVideoAddr                 ;   character
+    MOV   BL,[KbChar]                   ;    on the
+    MOV   [Char],BL                     ;     20th
+    CALL  PutChar                       ;      row
     MOV   BL,[KbChar]                   ; Quit
     CMP   BL,051h                       ;  when Q (ASCII 051h)
     JE    AllDone                       ;   is
@@ -315,6 +351,7 @@ String  Msg1,"------   MyOs v0.1.2   -----"
 String  Msg2,"------  32 Bit Kernel  -----"
 String  Msg3,"Our Kernel has ended!!"
 String  NewLine,0Ah
+String  Buffer,"XXXXXXXX"
 
 ColorBack   DB  0                       ; Background color (00h - 0Fh)
 ColorFore   DB  0                       ; Foreground color (00h - 0Fh)
@@ -324,6 +361,7 @@ KbChar      DB  0                       ; Keyboard character
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
 VidAdr      DD  0                       ; Video Address
+HexDigits   DB  "0123456789ABCDEF"
 
 ;--------------------------------------------------------------------------------------------------
 ; Equates
