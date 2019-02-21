@@ -58,7 +58,7 @@ CalcVideoAddr:
     MOV   AL,[Col]                      ;  col
     MOV   EDX,2                         ;  times
     MUL   EDX                           ;  2
-    SUB   EAX,EDX                       ;  minus 2
+    SUB   EAX,2                         ;  minus 2
     POP   EDX                           ; Add col calculation
     ADD   EAX,EDX                       ;  to row calculation
     ADD   EAX,VidMem                    ;  plus VidMem
@@ -199,7 +199,7 @@ KbRead:
     ; Read scancode
     ;--------------
     IN    AL,060h                       ; Obtain scancode form Keyboart I/O Port
-    MOV   [Char],AL                     ; Store the scancode in Char
+    MOV   [KbChar],AL                   ; Store the scancode in Char
     MOV   ECX,2FFFFh                    ; Sets the max times that LOOPNZ is executed 
 KbFlush:
     IN    AL,064h                       ; Read 8042 Status Register (bit 1 is input buffer status (0=empty, 1=full)
@@ -210,13 +210,13 @@ KbFlush:
     ; Translate scancode
     ;-------------------
 KbXlate:
-    MOV   AL,[Char]                     ; Translate
+    MOV   AL,[KbChar]                   ; Translate
     CMP   AL,010h                       ;  010h, the 
     JE    KbKeyQ                        ;   scancode 
     JMP   KbXlateDone                   ;    for the Q key,
 KbKeyQ:                                 ;     to the
     MOV   AL,051h                       ;      ASCII code
-    MOV   [Char],AL                     ;        for an
+    MOV   [KbChar],AL                   ;        for an
 KbXlateDone:                            ;         uppercase
     RET                                 ;          letter Q
 
@@ -266,8 +266,10 @@ Stage3:
 GetKeyPresses:
     CALL  KbRead                        ; Read the keyboard
     CALL  KbXlate                       ; Translate scancode to ASCII
+    MOV   BL,[KbChar]
+    MOV   [Char],BL
     CALL  PutChar                       ; Put the character on the screen
-    MOV   BL,[Char]                     ; Quit
+    MOV   BL,[KbChar]                   ; Quit
     CMP   BL,051h                       ;  when Q (ASCII 051h)
     JE    AllDone                       ;   is
     JMP   GetKeyPresses                 ;    pressed
@@ -318,6 +320,7 @@ ColorBack   DB  0                       ; Background color (00h - 0Fh)
 ColorFore   DB  0                       ; Foreground color (00h - 0Fh)
 ColorAttr   DB  0                       ; Combination of background and foreground color (e.g. 3Fh 3=cyan background,F=white text)
 Char        DB  0                       ; ASCII character
+KbChar      DB  0                       ; Keyboard character
 Row         DB  0                       ; Row (1-25)
 Col         DB  0                       ; Col (1-80)
 VidAdr      DD  0                       ; Video Address
