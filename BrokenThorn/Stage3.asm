@@ -154,7 +154,8 @@ ClrScr:
     PUSHA                               ; Save registers
     CLD                                 ; Clear DF Flag, REP STOSW increments EDI
     MOV   EDI,VidMem                    ; Set EDI to beginning of Video Memory
-    MOV   CX,2000                       ; 2,000 'words' on the screen
+    XOR   ECX,ECX                       ; 2,000 'words'
+    MOV   CX,2000                       ;  on the screen
     MOV   AH,[ColorAttr]                ; Set color attribute
     MOV   AL,' '                        ; We're going to 'blank' out the screen
     REP   STOSW                         ; Move AX to video memory pointed to by EDI, Repeat CX times, increment EDI each time
@@ -198,13 +199,18 @@ KbRead:
     ;--------------
     ; Read scancode
     ;--------------
-    IN    AL,060h                       ; Obtain scancode form Keyboart I/O Port
-    MOV   [KbChar],AL                   ; Store the scancode in Char
-    MOV   ECX,2FFFFh                    ; Sets the max times that LOOPNZ is executed 
-KbFlush:
-    IN    AL,064h                       ; Read 8042 Status Register (bit 1 is input buffer status (0=empty, 1=full)
-    TEST  AL,00000010b                  ; While bit 1 is 1,
-    LOOPNZ KbFlush                      ;  loop until bit 1 is 0 or ECX is 0
+    MOV   ECX,2FFFFh                    ; Set count for LOOP
+KbWait:
+    IN    AL,064h                       ; Read 8042 Status Register (bit 1 is input buffer status (0=empty, 1=full)  
+    TEST  AL,1                          ; If bit 1 
+    JNZ   KbGetIt                       ;  go get scan code
+    LOOP  KbWait                        ; Keep looping
+    MOV   AL,0FFh                       ; No scan
+    MOV   [KbChar],AL                   ;  code received
+    RET                                 ; All done!
+KbGetIt:
+    IN    AL,060h                       ; Obtain scancode from
+    MOV   [KbChar],AL                   ;   Keyboard I/O Port
     RET                                 ; All done!
     ;-------------------
     ; Translate scancode
@@ -286,29 +292,35 @@ Stage3:
     ;-------------------
     ; Get Keyboard input
     ;-------------------
-    MOV   EBX,NewLine                   ; Move the
-    CALL  PutStr                        ;  cursor down
-    MOV   EBX,NewLine                   ;   a couple
-    CALL  PutStr                        ;    of lines
+    MOV   BYTE [Row],0                  ; Set starting
+    MOV   BYTE [Col],1                  ;  Row, Col for hex output
     CLI                                 ; No Interrupts!
-GetKeyPresses:
+GetKey:
+    MOV   AL,[Row]                      ; If Row is
+    CMP   AL,25                         ;  25 or more
+    JL    GetKey1                       ;   reset it
+    MOV   BYTE [Row],0                  ;    to zero
+GetKey1:
     CALL  KbRead                        ; Read the keyboard
+    MOV   AL,[KbChar]                   ; If nothing
+    CMP   AL,0FFh                       ;  read then
+    JE    GetKey                        ;   jump back
     CALL  HexDump                       ; Translate to hex display
-    MOV   BYTE [Row],1                  ; Put hex
-    MOV   BYTE [Col],1                  ;  output
-    MOV   EBX,Buffer                    ;   at upper left
-    CALL  PutStr                        ;    corner of the screen
+    INC   BYTE [Row]                    ; Bump row by 1
+    MOV   BYTE [Col],1                  ; Reset col to 1
+    MOV   EBX,Buffer                    ; Put hex out at upper left
+    CALL  PutStr                        ;  corner of the screen
     CALL  KbXlate                       ; Translate scancode to ASCII
-    MOV   BYTE [Row],20                 ; Put the
-    MOV   BYTE [Col],1                  ;  keyboard
-    CALL  CalcVideoAddr                 ;   character
-    MOV   BL,[KbChar]                   ;    on the
-    MOV   [Char],BL                     ;     20th
-    CALL  PutChar                       ;      row
+    MOV   BYTE [Col],1                  ; Reset col to 1
+    INC   BYTE [Row]                    ; Put the
+    CALL  CalcVideoAddr                 ;  keyboard
+    MOV   BL,[KbChar]                   ;   character
+    MOV   [Char],BL                     ;    on the
+    CALL  PutChar                       ;     next row
     MOV   BL,[KbChar]                   ; Quit
     CMP   BL,051h                       ;  when Q (ASCII 051h)
     JE    AllDone                       ;   is
-    JMP   GetKeyPresses                 ;    pressed
+    JMP   GetKey                        ;    pressed
 
 AllDone:
     ;---------------
